@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KinTrace | Family Tree App</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --surface: rgba(255, 255, 255, 0.84);
+      --surface-strong: #ffffff;
+      --ink: #1f1c19;
+      --muted: #6f665d;
+      --line: rgba(31, 28, 25, 0.1);
+      --accent: #b85c38;
+      --accent-dark: #8f4325;
+      --accent-soft: #f4d7ca;
+      --success: #2d8f62;
+      --warning: #e29a2d;
+      --danger: #bb4d4d;
+      --shadow: 0 22px 48px rgba(65, 42, 24, 0.12);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(184, 92, 56, 0.18), transparent 24%),
+        radial-gradient(circle at top right, rgba(226, 154, 45, 0.14), transparent 20%),
+        linear-gradient(180deg, #fffaf5 0%, var(--bg) 100%);
+    }
+
+    h1, h2, h3, h4, p { margin-top: 0; }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+
+    .shell {
+      width: min(1280px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 1rem 0 3rem;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(12px);
+      background: rgba(255, 250, 245, 0.84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar-inner {
+      width: min(1280px, calc(100% - 2rem));
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 0;
+    }
+
+    .brand { display: flex; align-items: center; gap: 0.8rem; font-weight: 700; }
+
+    .brand-mark {
+      width: 2.6rem;
+      height: 2.6rem;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--accent), #d6895e);
+      color: white;
+      box-shadow: 0 12px 22px rgba(184, 92, 56, 0.2);
+    }
+
+    .topbar-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.25rem;
+      padding: 1.5rem 0;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 1.5rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -4rem -5rem auto;
+      width: 18rem;
+      height: 18rem;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(184, 92, 56, 0.15), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      background: var(--surface-strong);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 4.2rem);
+      line-height: 0.95;
+      margin-bottom: 0.9rem;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p { color: var(--muted); max-width: 48rem; }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .stat-card {
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+    }
+
+    .stat-card h3 { font-size: 1.7rem; margin: 0.4rem 0; }
+    .stat-card small, .muted { color: var(--muted); }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr auto auto;
+      gap: 0.8rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .input, .select, .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 16px;
+      padding: 0.9rem 1rem;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .textarea { min-height: 7rem; resize: vertical; }
+
+    .input:focus, .select:focus, .textarea:focus {
+      border-color: rgba(184, 92, 56, 0.45);
+      box-shadow: 0 0 0 3px rgba(184, 92, 56, 0.12);
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 0.9rem 1.1rem;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.2s ease, filter 0.2s ease, background 0.2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); filter: brightness(0.98); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #d07a53); color: white; }
+    .btn-secondary { background: #1f1c19; color: white; }
+    .btn-soft { background: var(--accent-soft); color: var(--accent-dark); }
+
+    .section { margin-top: 1.5rem; padding: 1.25rem; }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.15fr;
+      gap: 1rem;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .member-card,
+    .mini-card,
+    .timeline-card,
+    .path-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1rem;
+    }
+
+    .member-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-height: 100%;
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .member-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 32px rgba(65, 42, 24, 0.12);
+    }
+
+    .member-header { display: flex; gap: 0.9rem; align-items: center; }
+
+    .avatar {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #6f8ab7, #3f5679);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.82rem;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .tag.alive {
+      background: rgba(45, 143, 98, 0.12);
+      color: var(--success);
+      border-color: rgba(45, 143, 98, 0.22);
+    }
+
+    .tag.deceased {
+      background: rgba(187, 77, 77, 0.12);
+      color: var(--danger);
+      border-color: rgba(187, 77, 77, 0.22);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .tree-columns {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .generation-column {
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1rem;
+    }
+
+    .generation-column h4 { margin-bottom: 0.85rem; }
+    .generation-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .generation-member {
+      border-radius: 16px;
+      background: white;
+      border: 1px solid var(--line);
+      padding: 0.85rem;
+    }
+
+    .timeline { display: grid; gap: 0.85rem; }
+    .timeline-card { border-left: 5px solid var(--accent); }
+    .forms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+
+    .form-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .form-grid .wide { grid-column: 1 / -1; }
+    .label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.93rem; }
+
+    .list-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .mini-list { display: grid; gap: 0.8rem; }
+
+    .flash {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      background: #1f1c19;
+      color: white;
+      border-radius: 16px;
+      padding: 0.9rem 1rem;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+      max-width: 18rem;
+      z-index: 30;
+    }
+
+    .flash.show { opacity: 1; transform: translateY(0); }
+
+    .empty {
+      padding: 1rem;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+    }
+
+    @media (max-width: 1100px) {
+      .hero, .section-grid, .forms, .list-grid { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tree-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .hero-grid, .cards, .tree-columns, .form-grid, .split, .toolbar { grid-template-columns: 1fr; }
+      .topbar-inner, .section-head { align-items: start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">K</div>
+        <div>
+          <div>KinTrace</div>
+          <small class="muted">Family tree data, stories, and history</small>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-soft" id="seedBtn">Restore Demo Data</button>
+        <button class="btn btn-secondary" id="exportBtn">Export JSON</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="panel hero-card">
+        <div class="eyebrow">Complete family records • relationships • memory tracking</div>
+        <h1>Build a living family archive, not just a static tree.</h1>
+        <p>
+          This single-page app tracks full member profiles, life status, relationships, migration history,
+          achievements, events, media, permissions, search, generation filters, and timeline insights.
+        </p>
+        <div class="tag-row">
+          <span class="tag">Members</span>
+          <span class="tag">Relationships</span>
+          <span class="tag">Events</span>
+          <span class="tag">Achievements</span>
+          <span class="tag">Media</span>
+          <span class="tag">Permissions</span>
+        </div>
+      </div>
+      <div class="hero-grid">
+        <article class="panel stat-card">
+          <small>Total members</small>
+          <h3 id="totalMembers">0</h3>
+          <div class="muted">Living, deceased, and multi-generation coverage</div>
+        </article>
+        <article class="panel stat-card">
+          <small>Oldest member</small>
+          <h3 id="oldestMember">-</h3>
+          <div class="muted">Calculated from recorded dates</div>
+        </article>
+        <article class="panel stat-card">
+          <small>Average lifespan</small>
+          <h3 id="averageLifespan">-</h3>
+          <div class="muted">Uses deceased members with complete dates</div>
+        </article>
+        <article class="panel stat-card">
+          <small>Relationship path</small>
+          <h3 id="relationshipPath">-</h3>
+          <div class="muted">Auto-derived path between selected people</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <div class="section-head">
+        <div>
+          <h2>Search & Insights</h2>
+          <p class="muted">Search by name, filter by relation type, or isolate a generation.</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input class="input" id="searchInput" type="search" placeholder="Search family members by name, place, or nationality">
+        <select class="select" id="relationFilter">
+          <option value="">All relation types</option>
+        </select>
+        <select class="select" id="generationFilter">
+          <option value="">All generations</option>
+        </select>
+        <select class="select" id="pathFrom"></select>
+        <select class="select" id="pathTo"></select>
+      </div>
+    </section>
+
+    <section class="section-grid">
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>Family Members</h2>
+            <p class="muted">Detailed profiles with life status, biography, contact info, and memories.</p>
+          </div>
+        </div>
+        <div class="cards" id="memberGrid"></div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>Derived Insights</h2>
+            <p class="muted">Auto-calculated family structure details from your recorded relationships.</p>
+          </div>
+        </div>
+        <div class="mini-list" id="insightList"></div>
+      </section>
+    </section>
+
+    <section class="panel section">
+      <div class="section-head">
+        <div>
+          <h2>Generation View</h2>
+          <p class="muted">Filterable tree columns for grandparents, parents, current generation, and children.</p>
+        </div>
+      </div>
+      <div class="tree-columns" id="generationColumns"></div>
+    </section>
+
+    <section class="section-grid">
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>Timeline & Family History</h2>
+            <p class="muted">Births, marriages, deaths, achievements, migrations, and other major milestones.</p>
+          </div>
+        </div>
+        <div class="timeline" id="timelineList"></div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>Relationship Network</h2>
+            <p class="muted">Core and extended links including siblings, grandparents, uncles, aunts, and cousins.</p>
+          </div>
+        </div>
+        <div class="mini-list" id="relationshipList"></div>
+      </section>
+    </section>
+
+    <section class="panel section">
+      <div class="section-head">
+        <div>
+          <h2>Data Entry</h2>
+          <p class="muted">Add new members, relationships, events, achievements, and media records directly in the browser.</p>
+        </div>
+      </div>
+      <div class="forms">
+        <form class="form-card" id="memberForm">
+          <h3>Add Family Member</h3>
+          <div class="form-grid">
+            <div>
+              <label class="label" for="memberName">Full Name</label>
+              <input class="input" id="memberName" required>
+            </div>
+            <div>
+              <label class="label" for="memberGender">Gender</label>
+              <select class="select" id="memberGender">
+                <option>Female</option>
+                <option>Male</option>
+                <option>Non-binary</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="memberDob">Date of Birth</label>
+              <input class="input" id="memberDob" type="date" required>
+            </div>
+            <div>
+              <label class="label" for="memberGeneration">Generation</label>
+              <select class="select" id="memberGeneration">
+                <option value="Grandparents">Grandparents</option>
+                <option value="Parents">Parents</option>
+                <option value="Current">Current</option>
+                <option value="Children">Children</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="memberBirthPlace">Place of Birth</label>
+              <input class="input" id="memberBirthPlace">
+            </div>
+            <div>
+              <label class="label" for="memberNationality">Nationality</label>
+              <input class="input" id="memberNationality">
+            </div>
+            <div>
+              <label class="label" for="memberStatus">Life Status</label>
+              <select class="select" id="memberStatus">
+                <option value="Alive">Alive</option>
+                <option value="Deceased">Deceased</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="memberPhoto">Profile Photo URL</label>
+              <input class="input" id="memberPhoto" placeholder="https://...">
+            </div>
+            <div>
+              <label class="label" for="memberDeathDate">Date of Death</label>
+              <input class="input" id="memberDeathDate" type="date">
+            </div>
+            <div>
+              <label class="label" for="memberDeathPlace">Place of Death</label>
+              <input class="input" id="memberDeathPlace">
+            </div>
+            <div>
+              <label class="label" for="memberPhone">Phone Number</label>
+              <input class="input" id="memberPhone">
+            </div>
+            <div>
+              <label class="label" for="memberEmail">Email</label>
+              <input class="input" id="memberEmail" type="email">
+            </div>
+            <div class="wide">
+              <label class="label" for="memberSocial">Social Links</label>
+              <input class="input" id="memberSocial" placeholder="Comma separated links">
+            </div>
+            <div class="wide">
+              <label class="label" for="memberBio">Short Bio</label>
+              <textarea class="textarea" id="memberBio"></textarea>
+            </div>
+            <div class="wide">
+              <label class="label" for="memberLife">Life Description / Memories</label>
+              <textarea class="textarea" id="memberLife"></textarea>
+            </div>
+          </div>
+          <div style="margin-top: 1rem;">
+            <button class="btn btn-primary" type="submit">Save Member</button>
+          </div>
+        </form>
+
+        <div class="mini-list">
+          <form class="form-card" id="relationshipForm">
+            <h3>Add Relationship</h3>
+            <div class="form-grid">
+              <div>
+                <label class="label" for="relationPerson1">Person 1</label>
+                <select class="select" id="relationPerson1"></select>
+              </div>
+              <div>
+                <label class="label" for="relationPerson2">Person 2</label>
+                <select class="select" id="relationPerson2"></select>
+              </div>
+              <div>
+                <label class="label" for="relationType">Relation Type</label>
+                <select class="select" id="relationType">
+                  <option value="parent">Parent</option>
+                  <option value="child">Child</option>
+                  <option value="spouse">Spouse</option>
+                  <option value="sibling">Sibling</option>
+                  <option value="grandparent">Grandparent</option>
+                  <option value="uncle_aunt">Uncle / Aunt</option>
+                  <option value="cousin">Cousin</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="relationStart">Start Date</label>
+                <input class="input" id="relationStart" type="date">
+              </div>
+              <div>
+                <label class="label" for="relationEnd">End Date</label>
+                <input class="input" id="relationEnd" type="date">
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-primary" type="submit">Save Relationship</button>
+            </div>
+          </form>
+
+          <form class="form-card" id="eventForm">
+            <h3>Add Life Event</h3>
+            <div class="form-grid">
+              <div>
+                <label class="label" for="eventTitle">Title</label>
+                <input class="input" id="eventTitle" required>
+              </div>
+              <div>
+                <label class="label" for="eventType">Type</label>
+                <select class="select" id="eventType">
+                  <option>Birth</option>
+                  <option>Marriage</option>
+                  <option>Death</option>
+                  <option>Migration</option>
+                  <option>Achievement</option>
+                  <option>Career</option>
+                  <option>Education</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="eventDate">Date</label>
+                <input class="input" id="eventDate" type="date" required>
+              </div>
+              <div>
+                <label class="label" for="eventLocation">Location</label>
+                <input class="input" id="eventLocation">
+              </div>
+              <div class="wide">
+                <label class="label" for="eventMembers">Associated Members</label>
+                <select class="select" id="eventMembers" multiple size="4"></select>
+              </div>
+              <div class="wide">
+                <label class="label" for="eventDescription">Description</label>
+                <textarea class="textarea" id="eventDescription"></textarea>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-primary" type="submit">Save Event</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <div class="section-head">
+        <div>
+          <h2>Achievements, Media, and Access Control</h2>
+          <p class="muted">Track documents, captions, tagged people, milestones, and user roles in the same workspace.</p>
+        </div>
+      </div>
+      <div class="list-grid">
+        <div class="mini-list">
+          <form class="form-card" id="achievementForm">
+            <h3>Add Achievement</h3>
+            <div class="form-grid">
+              <div>
+                <label class="label" for="achievementMember">Member</label>
+                <select class="select" id="achievementMember"></select>
+              </div>
+              <div>
+                <label class="label" for="achievementType">Type</label>
+                <select class="select" id="achievementType">
+                  <option>Education</option>
+                  <option>Career</option>
+                  <option>Award</option>
+                  <option>Personal Milestone</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="achievementTitle">Title</label>
+                <input class="input" id="achievementTitle" required>
+              </div>
+              <div>
+                <label class="label" for="achievementDate">Date</label>
+                <input class="input" id="achievementDate" type="date">
+              </div>
+              <div class="wide">
+                <label class="label" for="achievementDescription">Description</label>
+                <textarea class="textarea" id="achievementDescription"></textarea>
+              </div>
+              <div class="wide">
+                <label class="label" for="achievementMedia">Supporting Document / Media URL</label>
+                <input class="input" id="achievementMedia">
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-primary" type="submit">Save Achievement</button>
+            </div>
+          </form>
+
+          <div class="form-card">
+            <h3>User Profiles & Permissions</h3>
+            <div class="mini-list" id="permissionList"></div>
+          </div>
+        </div>
+
+        <div class="mini-list">
+          <form class="form-card" id="mediaForm">
+            <h3>Add Media / Memory</h3>
+            <div class="form-grid">
+              <div>
+                <label class="label" for="mediaType">Media Type</label>
+                <select class="select" id="mediaType">
+                  <option>Photo</option>
+                  <option>Video</option>
+                  <option>Audio</option>
+                  <option>Document</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="mediaMember">Primary Member</label>
+                <select class="select" id="mediaMember"></select>
+              </div>
+              <div class="wide">
+                <label class="label" for="mediaUrl">Media URL</label>
+                <input class="input" id="mediaUrl">
+              </div>
+              <div class="wide">
+                <label class="label" for="mediaCaption">Caption</label>
+                <textarea class="textarea" id="mediaCaption"></textarea>
+              </div>
+              <div class="wide">
+                <label class="label" for="mediaTags">Tag People</label>
+                <select class="select" id="mediaTags" multiple size="4"></select>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-primary" type="submit">Save Media</button>
+            </div>
+          </form>
+
+          <div class="form-card">
+            <h3>Media Archive</h3>
+            <div class="mini-list" id="mediaList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="flash" id="flash"></div>
+
+  <script>
+    const STORAGE_KEY = "kintrace-family-data-v1";
+
+    const DEMO_DATA = {
+      users: [
+        { id: "u1", name: "Ananya Sharma", email: "ananya@example.com", role: "Admin", privacy: "Family-only" },
+        { id: "u2", name: "Rohan Sharma", email: "rohan@example.com", role: "Editor", privacy: "Family-only" },
+        { id: "u3", name: "Meera Kapoor", email: "meera@example.com", role: "Viewer", privacy: "Read-only" }
+      ],
+      permissions: [
+        { id: "p1", userId: "u1", memberId: "m1", access: "full control" },
+        { id: "p2", userId: "u2", memberId: "m4", access: "edit branch" },
+        { id: "p3", userId: "u3", memberId: "m6", access: "view only" }
+      ],
+      members: [
+        { id: "m1", name: "Rajesh Sharma", gender: "Male", dob: "1942-03-10", birthPlace: "Jaipur, India", nationality: "Indian", photo: "", status: "Deceased", deathDate: "2020-08-11", deathPlace: "Delhi, India", phone: "", email: "", social: [], bio: "Family elder, teacher, and oral historian of the Sharma lineage.", life: "Born in Jaipur, later moved to Delhi after marriage. Kept detailed notes about the family's migration and village roots.", generation: "Grandparents" },
+        { id: "m2", name: "Savitri Sharma", gender: "Female", dob: "1948-01-22", birthPlace: "Ajmer, India", nationality: "Indian", photo: "", status: "Alive", deathDate: "", deathPlace: "", phone: "9876543210", email: "savitri@example.com", social: ["facebook.com/savitri"], bio: "Known for preserving recipes, stories, and family celebration rituals.", life: "Married Rajesh in 1968 and helped the family settle in Delhi. Still records festival memories for younger generations.", generation: "Grandparents" },
+        { id: "m3", name: "Amit Sharma", gender: "Male", dob: "1972-09-14", birthPlace: "Delhi, India", nationality: "Indian", photo: "", status: "Alive", deathDate: "", deathPlace: "", phone: "9988776655", email: "amit@example.com", social: ["linkedin.com/in/amitsharma"], bio: "Engineer and family record keeper.", life: "Documented the family migration from Rajasthan to Delhi and digitized old photographs.", generation: "Parents" },
+        { id: "m4", name: "Neha Sharma", gender: "Female", dob: "1976-12-02", birthPlace: "Lucknow, India", nationality: "Indian", photo: "", status: "Alive", deathDate: "", deathPlace: "", phone: "9911223344", email: "neha@example.com", social: ["instagram.com/neha.family"], bio: "Career mentor, family event organizer, and storyteller.", life: "Moved from Lucknow to Delhi after marriage and manages a growing digital archive of documents and voice notes.", generation: "Parents" },
+        { id: "m5", name: "Rohan Sharma", gender: "Male", dob: "2001-04-17", birthPlace: "Delhi, India", nationality: "Indian", photo: "", status: "Alive", deathDate: "", deathPlace: "", phone: "9000112233", email: "rohan.sharma@example.com", social: ["github.com/rohanfamily"], bio: "Software developer building the next generation family archive.", life: "Interested in relationship mapping, AI storytelling, and voice-based memory capture.", generation: "Current" },
+        { id: "m6", name: "Ananya Sharma", gender: "Female", dob: "2004-11-09", birthPlace: "Delhi, India", nationality: "Indian", photo: "", status: "Alive", deathDate: "", deathPlace: "", phone: "9555060606", email: "ananya.sharma@example.com", social: ["instagram.com/ananya.memories"], bio: "Archivist of family photos, interviews, and celebration clips.", life: "Collects oral history and scans certificates, letters, and school records for long-term preservation.", generation: "Current" },
+        { id: "m7", name: "Ira Sharma", gender: "Female", dob: "2032-06-01", birthPlace: "Bengaluru, India", nationality: "Indian", photo: "", status: "Alive", deathDate: "", deathPlace: "", phone: "", email: "", social: [], bio: "Future generation placeholder for tree continuity.", life: "Reserved to show how child records fit into the generation model.", generation: "Children" }
+      ],
+      relationships: [
+        { id: "r1", person1: "m1", person2: "m3", type: "parent", startDate: "", endDate: "" },
+        { id: "r2", person1: "m2", person2: "m3", type: "parent", startDate: "", endDate: "" },
+        { id: "r3", person1: "m1", person2: "m4", type: "parent", startDate: "", endDate: "" },
+        { id: "r4", person1: "m2", person2: "m4", type: "parent", startDate: "", endDate: "" },
+        { id: "r5", person1: "m3", person2: "m4", type: "spouse", startDate: "1999-02-14", endDate: "" },
+        { id: "r6", person1: "m3", person2: "m5", type: "parent", startDate: "", endDate: "" },
+        { id: "r7", person1: "m4", person2: "m5", type: "parent", startDate: "", endDate: "" },
+        { id: "r8", person1: "m3", person2: "m6", type: "parent", startDate: "", endDate: "" },
+        { id: "r9", person1: "m4", person2: "m6", type: "parent", startDate: "", endDate: "" },
+        { id: "r10", person1: "m5", person2: "m6", type: "sibling", startDate: "", endDate: "" },
+        { id: "r11", person1: "m5", person2: "m7", type: "parent", startDate: "", endDate: "" }
+      ],
+      events: [
+        { id: "e1", title: "Marriage of Rajesh and Savitri", type: "Marriage", date: "1968-02-02", location: "Ajmer, India", description: "Union of two family branches that later settled in Delhi.", memberIds: ["m1", "m2"] },
+        { id: "e2", title: "Family migration to Delhi", type: "Migration", date: "1971-06-15", location: "Jaipur to Delhi", description: "Major relocation that shaped the next two generations.", memberIds: ["m1", "m2", "m3"] },
+        { id: "e3", title: "Amit and Neha wedding", type: "Marriage", date: "1999-02-14", location: "Delhi, India", description: "Created the current Sharma household branch.", memberIds: ["m3", "m4"] },
+        { id: "e4", title: "Rohan born", type: "Birth", date: "2001-04-17", location: "Delhi, India", description: "Birth of the next-generation family technologist.", memberIds: ["m5", "m3", "m4"] },
+        { id: "e5", title: "Rajesh memorial", type: "Death", date: "2020-08-11", location: "Delhi, India", description: "Family gathering to preserve stories and recorded memories.", memberIds: ["m1", "m2", "m3", "m4", "m5", "m6"] }
+      ],
+      achievements: [
+        { id: "a1", memberId: "m3", title: "Mechanical Engineering Degree", type: "Education", date: "1994-05-28", description: "Graduated with distinction.", media: "degree-certificate.pdf" },
+        { id: "a2", memberId: "m4", title: "Regional Teaching Award", type: "Award", date: "2012-09-01", description: "Recognized for education leadership.", media: "award-photo.jpg" },
+        { id: "a3", memberId: "m5", title: "Family Archive Platform Prototype", type: "Career", date: "2026-04-11", description: "Built the first digital prototype for the family tree project.", media: "prototype-link" }
+      ],
+      media: [
+        { id: "md1", type: "Photo", memberId: "m2", url: "", caption: "Savitri at the 50th anniversary celebration.", taggedIds: ["m2", "m3", "m4"] },
+        { id: "md2", type: "Audio", memberId: "m1", url: "", caption: "Voice note about village migration history.", taggedIds: ["m1"] },
+        { id: "md3", type: "Document", memberId: "m4", url: "", caption: "Scanned marriage invitation.", taggedIds: ["m3", "m4"] }
+      ]
+    };
+
+    const state = loadState();
+    const els = {
+      totalMembers: document.getElementById("totalMembers"),
+      oldestMember: document.getElementById("oldestMember"),
+      averageLifespan: document.getElementById("averageLifespan"),
+      relationshipPath: document.getElementById("relationshipPath"),
+      memberGrid: document.getElementById("memberGrid"),
+      insightList: document.getElementById("insightList"),
+      generationColumns: document.getElementById("generationColumns"),
+      timelineList: document.getElementById("timelineList"),
+      relationshipList: document.getElementById("relationshipList"),
+      permissionList: document.getElementById("permissionList"),
+      mediaList: document.getElementById("mediaList"),
+      searchInput: document.getElementById("searchInput"),
+      relationFilter: document.getElementById("relationFilter"),
+      generationFilter: document.getElementById("generationFilter"),
+      pathFrom: document.getElementById("pathFrom"),
+      pathTo: document.getElementById("pathTo"),
+      seedBtn: document.getElementById("seedBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      flash: document.getElementById("flash")
+    };
+
+    const forms = {
+      member: document.getElementById("memberForm"),
+      relationship: document.getElementById("relationshipForm"),
+      event: document.getElementById("eventForm"),
+      achievement: document.getElementById("achievementForm"),
+      media: document.getElementById("mediaForm")
+    };
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : structuredClone(DEMO_DATA);
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function showFlash(message) {
+      els.flash.textContent = message;
+      els.flash.classList.add("show");
+      clearTimeout(showFlash.timer);
+      showFlash.timer = setTimeout(() => els.flash.classList.remove("show"), 2200);
+    }
+
+    function createId(prefix) {
+      return prefix + Math.random().toString(36).slice(2, 9);
+    }
+
+    function getMember(id) {
+      return state.members.find((member) => member.id === id);
+    }
+
+    function yearsBetween(start, end) {
+      if (!start || !end) return null;
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      if (Number.isNaN(startDate) || Number.isNaN(endDate)) return null;
+      let years = endDate.getFullYear() - startDate.getFullYear();
+      const monthDiff = endDate.getMonth() - startDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < startDate.getDate())) years -= 1;
+      return years;
+    }
+
+    function getCurrentAge(member) {
+      if (!member?.dob) return null;
+      const end = member.status === "Deceased" && member.deathDate ? member.deathDate : new Date().toISOString().slice(0, 10);
+      return yearsBetween(member.dob, end);
+    }
+
+    function formatDate(date) {
+      if (!date) return "Date not set";
+      return new Date(date).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" });
+    }
+
+    function avatarFor(member) {
+      if (member.photo) return `<img src="${member.photo}" alt="${member.name}">`;
+      return member.name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
+    }
+
+    function getParents(memberId) {
+      return state.relationships.filter((rel) => rel.type === "parent" && rel.person2 === memberId).map((rel) => getMember(rel.person1)).filter(Boolean);
+    }
+
+    function getChildren(memberId) {
+      return state.relationships.filter((rel) => rel.type === "parent" && rel.person1 === memberId).map((rel) => getMember(rel.person2)).filter(Boolean);
+    }
+
+    function getSpouses(memberId) {
+      return state.relationships
+        .filter((rel) => rel.type === "spouse" && (rel.person1 === memberId || rel.person2 === memberId))
+        .map((rel) => getMember(rel.person1 === memberId ? rel.person2 : rel.person1))
+        .filter(Boolean);
+    }
+
+    function getSiblings(memberId) {
+      const parentIds = state.relationships.filter((rel) => rel.type === "parent" && rel.person2 === memberId).map((rel) => rel.person1);
+      const siblingIds = new Set(
+        state.relationships
+          .filter((rel) => rel.type === "parent" && parentIds.includes(rel.person1) && rel.person2 !== memberId)
+          .map((rel) => rel.person2)
+      );
+      state.relationships
+        .filter((rel) => rel.type === "sibling" && (rel.person1 === memberId || rel.person2 === memberId))
+        .forEach((rel) => siblingIds.add(rel.person1 === memberId ? rel.person2 : rel.person1));
+      return [...siblingIds].map(getMember).filter(Boolean);
+    }
+
+    function getGrandparents(memberId) {
+      const map = new Map();
+      getParents(memberId).forEach((parent) => getParents(parent.id).forEach((grandparent) => map.set(grandparent.id, grandparent)));
+      return [...map.values()];
+    }
+
+    function getUnclesAunts(memberId) {
+      const map = new Map();
+      getParents(memberId).forEach((parent) => getSiblings(parent.id).forEach((relative) => map.set(relative.id, relative)));
+      return [...map.values()];
+    }
+
+    function getCousins(memberId) {
+      const map = new Map();
+      getUnclesAunts(memberId).forEach((relative) => getChildren(relative.id).forEach((child) => map.set(child.id, child)));
+      return [...map.values()];
+    }
+
+    function buildGraph() {
+      const graph = new Map();
+      state.members.forEach((member) => graph.set(member.id, []));
+      state.relationships.forEach((rel) => {
+        if (!graph.has(rel.person1) || !graph.has(rel.person2)) return;
+        graph.get(rel.person1).push({ id: rel.person2, type: rel.type });
+        graph.get(rel.person2).push({ id: rel.person1, type: rel.type });
+      });
+      return graph;
+    }
+
+    function findRelationshipPath(fromId, toId) {
+      if (!fromId || !toId || fromId === toId) return [];
+      const graph = buildGraph();
+      const queue = [[fromId]];
+      const visited = new Set([fromId]);
+      while (queue.length) {
+        const path = queue.shift();
+        const last = path[path.length - 1];
+        if (last === toId) return path;
+        (graph.get(last) || []).forEach((next) => {
+          if (!visited.has(next.id)) {
+            visited.add(next.id);
+            queue.push([...path, next.id]);
+          }
+        });
+      }
+      return [];
+    }
+
+    function getGenerationCounts() {
+      const counts = {};
+      state.members.forEach((member) => { counts[member.generation] = (counts[member.generation] || 0) + 1; });
+      return counts;
+    }
+
+    function getOldestMember() {
+      return [...state.members].map((member) => ({ member, age: getCurrentAge(member) })).filter((entry) => entry.age !== null).sort((a, b) => b.age - a.age)[0] || null;
+    }
+
+    function getAverageLifespan() {
+      const deceased = state.members.filter((member) => member.status === "Deceased" && member.dob && member.deathDate).map((member) => yearsBetween(member.dob, member.deathDate)).filter((age) => age !== null);
+      if (!deceased.length) return null;
+      return Math.round(deceased.reduce((sum, age) => sum + age, 0) / deceased.length);
+    }
+
+    function getFilteredMembers() {
+      const term = els.searchInput.value.trim().toLowerCase();
+      const generation = els.generationFilter.value;
+      const relationType = els.relationFilter.value;
+      let filtered = [...state.members];
+      if (term) {
+        filtered = filtered.filter((member) =>
+          [member.name, member.birthPlace, member.nationality, member.bio].filter(Boolean).some((value) => value.toLowerCase().includes(term))
+        );
+      }
+      if (generation) filtered = filtered.filter((member) => member.generation === generation);
+      if (relationType) {
+        const ids = new Set(state.relationships.filter((rel) => rel.type === relationType).flatMap((rel) => [rel.person1, rel.person2]));
+        filtered = filtered.filter((member) => ids.has(member.id));
+      }
+      return filtered;
+    }
+
+    function renderStats() {
+      els.totalMembers.textContent = state.members.length;
+      const oldest = getOldestMember();
+      els.oldestMember.textContent = oldest ? `${oldest.member.name.split(" ")[0]} (${oldest.age})` : "-";
+      const average = getAverageLifespan();
+      els.averageLifespan.textContent = average ? `${average} yrs` : "No data";
+      const path = findRelationshipPath(els.pathFrom.value, els.pathTo.value);
+      els.relationshipPath.textContent = path.length ? path.map((id) => getMember(id)?.name.split(" ")[0] || "").join(" → ") : "No path";
+    }
+
+    function renderMembers() {
+      const members = getFilteredMembers();
+      els.memberGrid.innerHTML = members.length ? members.map((member) => {
+        const parents = getParents(member.id).map((item) => item.name).join(", ") || "Not linked";
+        const spouses = getSpouses(member.id).map((item) => item.name).join(", ") || "None recorded";
+        const siblings = getSiblings(member.id).map((item) => item.name).join(", ") || "None derived";
+        const age = getCurrentAge(member);
+        return `
+          <article class="member-card">
+            <div class="member-header">
+              <div class="avatar">${avatarFor(member)}</div>
+              <div>
+                <h3>${member.name}</h3>
+                <div class="muted">${member.gender} • ${member.generation}</div>
+              </div>
+            </div>
+            <div class="tag-row">
+              <span class="tag ${member.status === "Alive" ? "alive" : "deceased"}">${member.status}</span>
+              <span class="tag">${age !== null ? `${age} years` : "Age unknown"}</span>
+              <span class="tag">${member.nationality || "Nationality not set"}</span>
+            </div>
+            <div class="split">
+              <div class="mini-card">
+                <strong>Birth</strong>
+                <div class="muted">${formatDate(member.dob)}</div>
+                <div class="muted">${member.birthPlace || "Place not set"}</div>
+              </div>
+              <div class="mini-card">
+                <strong>Life Status</strong>
+                <div class="muted">${member.status === "Deceased" ? formatDate(member.deathDate) : "Living"}</div>
+                <div class="muted">${member.deathPlace || "No death record"}</div>
+              </div>
+            </div>
+            <div>${member.bio || "No bio yet."}</div>
+            <div class="muted">${member.life || "No life story added yet."}</div>
+            <div class="mini-card">
+              <strong>Family Links</strong>
+              <div class="muted">Parents: ${parents}</div>
+              <div class="muted">Spouse: ${spouses}</div>
+              <div class="muted">Siblings: ${siblings}</div>
+            </div>
+            <div class="mini-card">
+              <strong>Contact & Story Assets</strong>
+              <div class="muted">${member.phone || "No phone"} • ${member.email || "No email"}</div>
+              <div class="muted">${member.social.length ? member.social.join(", ") : "No social links"}</div>
+            </div>
+          </article>
+        `;
+      }).join("") : `<div class="empty">No members match your current search or filters.</div>`;
+    }
+
+    function renderInsights() {
+      const counts = getGenerationCounts();
+      const oldest = getOldestMember();
+      const lifespan = getAverageLifespan();
+      const living = state.members.filter((member) => member.status === "Alive").length;
+      const deceased = state.members.length - living;
+      const siblingPairs = state.members.map((member) => ({ member, siblings: getSiblings(member.id) })).filter((entry) => entry.siblings.length).slice(0, 4);
+      const cards = [
+        { title: "Living vs deceased", value: `${living} / ${deceased}`, note: "Quick family status distribution." },
+        { title: "Oldest recorded member", value: oldest ? `${oldest.member.name} (${oldest.age})` : "No data", note: "Calculated using lifespan or current age." },
+        { title: "Average lifespan", value: lifespan ? `${lifespan} years` : "No data", note: "Uses deceased members with complete date fields." },
+        { title: "Family size growth", value: Object.entries(counts).map(([gen, count]) => `${gen}: ${count}`).join(" • "), note: "Generation-based growth overview." }
+      ];
+      els.insightList.innerHTML = cards.map((card) => `
+        <article class="mini-card">
+          <strong>${card.title}</strong>
+          <h3 style="margin:0.45rem 0 0.3rem;">${card.value}</h3>
+          <div class="muted">${card.note}</div>
+        </article>
+      `).join("") + siblingPairs.map((entry) => `
+        <article class="mini-card">
+          <strong>Derived siblings</strong>
+          <div style="margin-top:0.45rem;">${entry.member.name}</div>
+          <div class="muted">${entry.siblings.map((item) => item.name).join(", ")}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderGenerationView() {
+      const generations = ["Grandparents", "Parents", "Current", "Children"];
+      els.generationColumns.innerHTML = generations.map((generation) => {
+        const members = state.members.filter((member) => member.generation === generation);
+        return `
+          <article class="generation-column">
+            <h4>${generation}</h4>
+            <div class="generation-list">
+              ${members.length ? members.map((member) => `
+                <div class="generation-member">
+                  <strong>${member.name}</strong>
+                  <div class="muted">${member.status} • ${member.birthPlace || "Birthplace unknown"}</div>
+                  <div class="muted">Children: ${getChildren(member.id).map((item) => item.name).join(", ") || "Not linked"}</div>
+                </div>
+              `).join("") : `<div class="empty">No members in this generation.</div>`}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function buildTimelineItems() {
+      const eventItems = state.events.map((event) => ({
+        date: event.date,
+        title: event.title,
+        type: event.type,
+        description: event.description,
+        location: event.location,
+        people: event.memberIds.map((id) => getMember(id)?.name).filter(Boolean).join(", ")
+      }));
+      const achievementItems = state.achievements.map((achievement) => ({
+        date: achievement.date,
+        title: achievement.title,
+        type: `Achievement • ${achievement.type}`,
+        description: achievement.description,
+        location: "",
+        people: getMember(achievement.memberId)?.name || ""
+      }));
+      return [...eventItems, ...achievementItems].sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    function renderTimeline() {
+      const items = buildTimelineItems();
+      els.timelineList.innerHTML = items.length ? items.map((item) => `
+        <article class="timeline-card">
+          <div class="tag-row" style="margin-bottom:0.55rem;">
+            <span class="tag">${item.type}</span>
+            <span class="tag">${formatDate(item.date)}</span>
+          </div>
+          <h3>${item.title}</h3>
+          <div class="muted">${item.location || "Location not recorded"}</div>
+          <p>${item.description || "No description."}</p>
+          <div class="muted">${item.people || "No associated members"}</div>
+        </article>
+      `).join("") : `<div class="empty">No timeline items recorded yet.</div>`;
+    }
+
+    function renderRelationships() {
+      const baseCards = state.relationships.map((rel) => {
+        const person1 = getMember(rel.person1)?.name || "Unknown";
+        const person2 = getMember(rel.person2)?.name || "Unknown";
+        return `
+          <article class="path-card">
+            <strong>${person1} → ${person2}</strong>
+            <div class="muted">${rel.type}</div>
+            <div class="muted">Start: ${rel.startDate ? formatDate(rel.startDate) : "Not set"}</div>
+            <div class="muted">End: ${rel.endDate ? formatDate(rel.endDate) : "Active / unknown"}</div>
+          </article>
+        `;
+      }).join("");
+
+      const extended = state.members.slice(0, 4).map((member) => `
+        <article class="path-card">
+          <strong>${member.name}</strong>
+          <div class="muted">Grandparents: ${getGrandparents(member.id).map((item) => item.name).join(", ") || "None derived"}</div>
+          <div class="muted">Uncles/Aunts: ${getUnclesAunts(member.id).map((item) => item.name).join(", ") || "None derived"}</div>
+          <div class="muted">Cousins: ${getCousins(member.id).map((item) => item.name).join(", ") || "None derived"}</div>
+        </article>
+      `).join("");
+
+      els.relationshipList.innerHTML = (baseCards + extended) || `<div class="empty">No relationships yet.</div>`;
+    }
+
+    function renderPermissions() {
+      els.permissionList.innerHTML = state.users.map((user) => {
+        const accessRows = state.permissions
+          .filter((permission) => permission.userId === user.id)
+          .map((permission) => `${getMember(permission.memberId)?.name || "Unknown branch"}: ${permission.access}`)
+          .join(" • ");
+
+        return `
+          <article class="mini-card">
+            <strong>${user.name}</strong>
+            <div class="muted">${user.role} • ${user.email}</div>
+            <div class="muted">Privacy: ${user.privacy}</div>
+            <div class="muted">${accessRows || "No specific member permissions assigned."}</div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderMedia() {
+      els.mediaList.innerHTML = state.media.length ? state.media.map((item) => `
+        <article class="mini-card">
+          <div class="tag-row" style="margin-bottom:0.5rem;">
+            <span class="tag">${item.type}</span>
+            <span class="tag">${getMember(item.memberId)?.name || "Unknown member"}</span>
+          </div>
+          <strong>${item.caption || "Untitled memory"}</strong>
+          <div class="muted">${item.url || "No external media URL provided"}</div>
+          <div class="muted">Tagged: ${item.taggedIds.map((id) => getMember(id)?.name).filter(Boolean).join(", ") || "No tags"}</div>
+        </article>
+      `).join("") : `<div class="empty">No media or memories have been added yet.</div>`;
+    }
+
+    function populateSelect(select, options, placeholder) {
+      select.innerHTML = options.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
+      if (placeholder) select.insertAdjacentHTML("afterbegin", `<option value="">${placeholder}</option>`);
+    }
+
+    function populateMultiSelect(select, members) {
+      select.innerHTML = members.map((member) => `<option value="${member.id}">${member.name}</option>`).join("");
+    }
+
+    function refreshFiltersAndForms() {
+      const relationTypes = [...new Set(state.relationships.map((rel) => rel.type))];
+      const generations = [...new Set(state.members.map((member) => member.generation))];
+      const memberOptions = state.members.map((member) => ({ value: member.id, label: member.name }));
+
+      const currentRelationFilter = els.relationFilter.value;
+      const currentGenerationFilter = els.generationFilter.value;
+      const currentPathFrom = els.pathFrom.value;
+      const currentPathTo = els.pathTo.value;
+
+      populateSelect(els.relationFilter, relationTypes.map((type) => ({ value: type, label: type })), "All relation types");
+      populateSelect(els.generationFilter, generations.map((generation) => ({ value: generation, label: generation })), "All generations");
+      populateSelect(els.pathFrom, memberOptions, "Path from");
+      populateSelect(els.pathTo, memberOptions, "Path to");
+      populateSelect(document.getElementById("relationPerson1"), memberOptions);
+      populateSelect(document.getElementById("relationPerson2"), memberOptions);
+      populateSelect(document.getElementById("achievementMember"), memberOptions);
+      populateSelect(document.getElementById("mediaMember"), memberOptions);
+      populateMultiSelect(document.getElementById("eventMembers"), state.members);
+      populateMultiSelect(document.getElementById("mediaTags"), state.members);
+
+      if (relationTypes.includes(currentRelationFilter)) els.relationFilter.value = currentRelationFilter;
+      if (generations.includes(currentGenerationFilter)) els.generationFilter.value = currentGenerationFilter;
+      if (state.members.some((member) => member.id === currentPathFrom)) els.pathFrom.value = currentPathFrom;
+      if (state.members.some((member) => member.id === currentPathTo)) els.pathTo.value = currentPathTo;
+    }
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "kintrace-family-data.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function render() {
+      saveState();
+      refreshFiltersAndForms();
+      renderStats();
+      renderMembers();
+      renderInsights();
+      renderGenerationView();
+      renderTimeline();
+      renderRelationships();
+      renderPermissions();
+      renderMedia();
+    }
+
+    forms.member.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const member = {
+        id: createId("m"),
+        name: document.getElementById("memberName").value.trim(),
+        gender: document.getElementById("memberGender").value,
+        dob: document.getElementById("memberDob").value,
+        birthPlace: document.getElementById("memberBirthPlace").value.trim(),
+        nationality: document.getElementById("memberNationality").value.trim(),
+        photo: document.getElementById("memberPhoto").value.trim(),
+        status: document.getElementById("memberStatus").value,
+        deathDate: document.getElementById("memberDeathDate").value,
+        deathPlace: document.getElementById("memberDeathPlace").value.trim(),
+        phone: document.getElementById("memberPhone").value.trim(),
+        email: document.getElementById("memberEmail").value.trim(),
+        social: document.getElementById("memberSocial").value.split(",").map((value) => value.trim()).filter(Boolean),
+        bio: document.getElementById("memberBio").value.trim(),
+        life: document.getElementById("memberLife").value.trim(),
+        generation: document.getElementById("memberGeneration").value
+      };
+      state.members.unshift(member);
+      forms.member.reset();
+      render();
+      showFlash("Family member added.");
+    });
+
+    forms.relationship.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const person1 = document.getElementById("relationPerson1").value;
+      const person2 = document.getElementById("relationPerson2").value;
+      if (!person1 || !person2 || person1 === person2) {
+        showFlash("Choose two different people for the relationship.");
+        return;
+      }
+      state.relationships.unshift({
+        id: createId("r"),
+        person1,
+        person2,
+        type: document.getElementById("relationType").value,
+        startDate: document.getElementById("relationStart").value,
+        endDate: document.getElementById("relationEnd").value
+      });
+      forms.relationship.reset();
+      render();
+      showFlash("Relationship saved.");
+    });
+
+    forms.event.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.events.unshift({
+        id: createId("e"),
+        title: document.getElementById("eventTitle").value.trim(),
+        type: document.getElementById("eventType").value,
+        date: document.getElementById("eventDate").value,
+        location: document.getElementById("eventLocation").value.trim(),
+        description: document.getElementById("eventDescription").value.trim(),
+        memberIds: [...document.getElementById("eventMembers").selectedOptions].map((option) => option.value)
+      });
+      forms.event.reset();
+      render();
+      showFlash("Life event recorded.");
+    });
+
+    forms.achievement.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.achievements.unshift({
+        id: createId("a"),
+        memberId: document.getElementById("achievementMember").value,
+        title: document.getElementById("achievementTitle").value.trim(),
+        type: document.getElementById("achievementType").value,
+        date: document.getElementById("achievementDate").value,
+        description: document.getElementById("achievementDescription").value.trim(),
+        media: document.getElementById("achievementMedia").value.trim()
+      });
+      forms.achievement.reset();
+      render();
+      showFlash("Achievement added.");
+    });
+
+    forms.media.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.media.unshift({
+        id: createId("md"),
+        type: document.getElementById("mediaType").value,
+        memberId: document.getElementById("mediaMember").value,
+        url: document.getElementById("mediaUrl").value.trim(),
+        caption: document.getElementById("mediaCaption").value.trim(),
+        taggedIds: [...document.getElementById("mediaTags").selectedOptions].map((option) => option.value)
+      });
+      forms.media.reset();
+      render();
+      showFlash("Media item saved.");
+    });
+
+    els.searchInput.addEventListener("input", renderMembers);
+    els.relationFilter.addEventListener("change", renderMembers);
+    els.generationFilter.addEventListener("change", renderMembers);
+    els.pathFrom.addEventListener("change", renderStats);
+    els.pathTo.addEventListener("change", renderStats);
+
+    els.seedBtn.addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      const fresh = structuredClone(DEMO_DATA);
+      Object.keys(state).forEach((key) => delete state[key]);
+      Object.assign(state, fresh);
+      render();
+      showFlash("Demo data restored.");
+    });
+
+    els.exportBtn.addEventListener("click", exportData);
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Momentum Fitness Tracker</title>
+  <style>
+    :root {
+      --bg: #07131e;
+      --bg-soft: #0f2131;
+      --panel: rgba(8, 23, 36, 0.88);
+      --panel-strong: rgba(10, 29, 45, 0.95);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f4f7f8;
+      --muted: #9eb2be;
+      --accent: #ff8c42;
+      --accent-soft: rgba(255, 140, 66, 0.16);
+      --mint: #11c5a3;
+      --mint-soft: rgba(17, 197, 163, 0.16);
+      --gold: #ffd166;
+      --rose: #ff6b6b;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Aptos", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(17, 197, 163, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(255, 140, 66, 0.16), transparent 30%),
+        linear-gradient(160deg, #07131e 0%, #091b2a 48%, #0b1624 100%);
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent 85%);
+      opacity: 0.3;
+    }
+
+    .app-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 32px auto 40px;
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(11, 31, 48, 0.96), rgba(8, 24, 38, 0.9));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      animation: rise-in 0.7s ease both;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: auto -20% 0 auto;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(255, 140, 66, 0.14), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.9fr);
+      gap: 24px;
+      padding: 30px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 12px;
+      color: var(--gold);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 38px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), transparent);
+      border-radius: 999px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-family: "Franklin Gothic Heavy", "Arial Narrow", sans-serif;
+      font-size: clamp(2.1rem, 4vw, 3.7rem);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-date {
+      margin: 14px 0 10px;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .hero-text {
+      margin: 0;
+      max-width: 56ch;
+      color: #dbe7ee;
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 16px;
+      align-content: stretch;
+    }
+
+    .score-card {
+      display: grid;
+      gap: 8px;
+      align-content: center;
+      min-height: 180px;
+      padding: 24px;
+      border-radius: 22px;
+      background:
+        linear-gradient(145deg, rgba(255, 140, 66, 0.2), rgba(17, 197, 163, 0.08)),
+        rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .score-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .score-card strong {
+      font-size: clamp(2.6rem, 5vw, 4.3rem);
+      line-height: 0.9;
+    }
+
+    .score-card small {
+      color: #d4e7e2;
+      font-size: 0.98rem;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mini-stat {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .mini-stat span,
+    .metric-label,
+    .section-note,
+    .helper-text {
+      color: var(--muted);
+    }
+
+    .mini-stat span {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 0.83rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .mini-stat strong {
+      display: block;
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .mini-stat small {
+      color: #dbe7ee;
+      font-size: 0.84rem;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+    }
+
+    .overview-panel,
+    .chart-panel,
+    .history-panel {
+      grid-column: 1 / -1;
+    }
+
+    .panel-content {
+      padding: 24px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+      padding: 24px 24px 0;
+    }
+
+    .section-head h2 {
+      margin: 0 0 6px;
+      font-size: 1.25rem;
+    }
+
+    .section-note {
+      margin: 0;
+      line-height: 1.55;
+      max-width: 60ch;
+    }
+
+    .ghost-button,
+    .primary-button,
+    .chip-button,
+    .delete-button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    .ghost-button:hover,
+    .primary-button:hover,
+    .chip-button:hover,
+    .delete-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .ghost-button {
+      padding: 12px 16px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .primary-button {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--accent), #ff6b2c);
+      color: #131313;
+      font-weight: 700;
+    }
+
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 24px 24px;
+    }
+
+    .chip-button {
+      padding: 10px 14px;
+      background: rgba(17, 197, 163, 0.14);
+      color: #d8fff5;
+      border: 1px solid rgba(17, 197, 163, 0.22);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      padding: 0 24px 18px;
+    }
+
+    .metric-card {
+      padding: 20px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .metric-card.steps {
+      background: linear-gradient(180deg, rgba(255, 140, 66, 0.16), rgba(255, 255, 255, 0.04));
+    }
+
+    .metric-card.water {
+      background: linear-gradient(180deg, rgba(17, 197, 163, 0.16), rgba(255, 255, 255, 0.04));
+    }
+
+    .metric-card.active {
+      background: linear-gradient(180deg, rgba(255, 209, 102, 0.14), rgba(255, 255, 255, 0.04));
+    }
+
+    .metric-card.sleep {
+      background: linear-gradient(180deg, rgba(122, 191, 255, 0.14), rgba(255, 255, 255, 0.04));
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .metric-card strong {
+      display: block;
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .metric-meta {
+      margin: 0 0 16px;
+      color: #dce8ef;
+      min-height: 42px;
+      line-height: 1.45;
+      font-size: 0.92rem;
+    }
+
+    .progress-track {
+      position: relative;
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .progress-track span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      transition: width 0.35s ease;
+    }
+
+    .progress-track.steps span {
+      background: linear-gradient(90deg, #ffb067, var(--accent));
+    }
+
+    .progress-track.water span {
+      background: linear-gradient(90deg, #4be2c6, var(--mint));
+    }
+
+    .progress-track.active span {
+      background: linear-gradient(90deg, #ffe29c, var(--gold));
+    }
+
+    .progress-track.sleep span {
+      background: linear-gradient(90deg, #86c7ff, #53a6ff);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      padding: 0 24px 24px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 15px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font: inherit;
+      outline: none;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    input:focus {
+      border-color: rgba(255, 140, 66, 0.7);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .helper-text {
+      margin: 0;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      grid-column: 1 / -1;
+    }
+
+    .summary-strip {
+      margin: 0 24px 24px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: #dce8ef;
+      line-height: 1.6;
+    }
+
+    .chart-wrap {
+      padding: 0 24px 24px;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 14px;
+      align-items: end;
+      min-height: 270px;
+    }
+
+    .chart-column {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      min-height: 240px;
+    }
+
+    .chart-value,
+    .chart-label {
+      color: #dbe7ee;
+      font-size: 0.9rem;
+    }
+
+    .chart-track {
+      position: relative;
+      width: 100%;
+      min-height: 180px;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.08)),
+        rgba(255, 255, 255, 0.03);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .chart-bar {
+      width: 70%;
+      border-radius: 18px 18px 8px 8px;
+      background: linear-gradient(180deg, var(--mint), #0b7b68);
+      box-shadow: 0 10px 30px rgba(17, 197, 163, 0.28);
+      transition: height 0.35s ease;
+    }
+
+    .activity-list {
+      list-style: none;
+      margin: 0;
+      padding: 0 24px 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .activity-item,
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .activity-main {
+      min-width: 0;
+    }
+
+    .activity-main strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .activity-main span {
+      color: #dbe7ee;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .delete-button {
+      padding: 10px 14px;
+      background: rgba(255, 107, 107, 0.12);
+      color: #ffd7d7;
+      border: 1px solid rgba(255, 107, 107, 0.22);
+      flex-shrink: 0;
+    }
+
+    .empty-state {
+      justify-content: center;
+      color: var(--muted);
+      text-align: center;
+      min-height: 100px;
+    }
+
+    @keyframes rise-in {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 1000px) {
+      .hero,
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .app-shell {
+        width: min(100% - 20px, 1180px);
+        margin: 20px auto 28px;
+      }
+
+      .hero,
+      .section-head,
+      .panel-content {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .hero {
+        padding-top: 22px;
+        padding-bottom: 22px;
+      }
+
+      .section-head {
+        padding-top: 18px;
+      }
+
+      .mini-stats,
+      .metric-grid,
+      .form-grid,
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chip-group,
+      .activity-list,
+      .summary-strip,
+      .chart-wrap,
+      .form-grid,
+      .metric-grid {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .form-actions,
+      .activity-item,
+      .section-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .chart-track {
+        min-height: 120px;
+      }
+
+      .chart-column {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero panel">
+      <div>
+        <p class="eyebrow">Personal Fitness Dashboard</p>
+        <h1>Momentum Tracker</h1>
+        <p id="todayLabel" class="hero-date"></p>
+        <p id="heroInsight" class="hero-text"></p>
+      </div>
+
+      <div class="hero-side">
+        <div class="score-card">
+          <span class="score-label">Daily Score</span>
+          <strong id="dailyScore">0%</strong>
+          <small id="streakLabel">0 day streak</small>
+        </div>
+
+        <div class="mini-stats">
+          <article class="mini-stat">
+            <span>Sessions</span>
+            <strong id="sessionCount">0</strong>
+            <small>Logged today</small>
+          </article>
+          <article class="mini-stat">
+            <span>Calories</span>
+            <strong id="caloriesBurned">0</strong>
+            <small>Burned today</small>
+          </article>
+          <article class="mini-stat">
+            <span>Active</span>
+            <strong id="activeMinutesHero">0 min</strong>
+            <small>Movement total</small>
+          </article>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="overview-panel panel">
+        <div class="section-head">
+          <div>
+            <h2>Today's Overview</h2>
+            <p class="section-note">Track your four daily anchors and use the quick actions when you want a faster update.</p>
+          </div>
+          <button id="resetDayBtn" class="ghost-button" type="button">Reset Today</button>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card steps">
+            <span class="metric-label">Steps</span>
+            <strong id="stepsValue">0</strong>
+            <p id="stepsMeta" class="metric-meta">Goal 0</p>
+            <div class="progress-track steps"><span id="stepsBar"></span></div>
+          </article>
+
+          <article class="metric-card water">
+            <span class="metric-label">Hydration</span>
+            <strong id="waterValue">0 cups</strong>
+            <p id="waterMeta" class="metric-meta">Goal 0 cups</p>
+            <div class="progress-track water"><span id="waterBar"></span></div>
+          </article>
+
+          <article class="metric-card active">
+            <span class="metric-label">Active Minutes</span>
+            <strong id="activeValue">0 min</strong>
+            <p id="activeMeta" class="metric-meta">Goal 0 min</p>
+            <div class="progress-track active"><span id="activeBar"></span></div>
+          </article>
+
+          <article class="metric-card sleep">
+            <span class="metric-label">Sleep</span>
+            <strong id="sleepValue">0 hrs</strong>
+            <p id="sleepMeta" class="metric-meta">Goal 0 hrs</p>
+            <div class="progress-track sleep"><span id="sleepBar"></span></div>
+          </article>
+        </div>
+
+        <div class="chip-group">
+          <button class="chip-button quick-action" type="button" data-field="steps" data-amount="500">+500 steps</button>
+          <button class="chip-button quick-action" type="button" data-field="water" data-amount="1">+1 cup water</button>
+          <button class="chip-button quick-action" type="button" data-field="sleep" data-amount="0.5">+0.5 hr sleep</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Daily Goals</h2>
+            <p class="section-note">Set the targets you want to chase every day.</p>
+          </div>
+        </div>
+
+        <form id="goalsForm" class="form-grid">
+          <div class="field">
+            <label for="goalSteps">Step Goal</label>
+            <input id="goalSteps" name="goalSteps" type="number" min="1000" step="500" required>
+          </div>
+          <div class="field">
+            <label for="goalWater">Water Goal</label>
+            <input id="goalWater" name="goalWater" type="number" min="1" step="1" required>
+          </div>
+          <div class="field">
+            <label for="goalActiveMinutes">Active Minutes Goal</label>
+            <input id="goalActiveMinutes" name="goalActiveMinutes" type="number" min="10" step="5" required>
+          </div>
+          <div class="field">
+            <label for="goalSleep">Sleep Goal</label>
+            <input id="goalSleep" name="goalSleep" type="number" min="4" max="12" step="0.5" required>
+          </div>
+          <div class="form-actions">
+            <p class="helper-text">Small consistent goals are easier to keep alive than perfect ones.</p>
+            <button class="primary-button" type="submit">Save Goals</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Daily Check-In</h2>
+            <p class="section-note">Update today's metrics directly. Workout steps from your activity log are added on top of the step count here.</p>
+          </div>
+        </div>
+
+        <form id="metricsForm" class="form-grid">
+          <div class="field">
+            <label for="todaySteps">Steps</label>
+            <input id="todaySteps" name="todaySteps" type="number" min="0" step="100" required>
+          </div>
+          <div class="field">
+            <label for="todayWater">Water</label>
+            <input id="todayWater" name="todayWater" type="number" min="0" step="1" required>
+          </div>
+          <div class="field full">
+            <label for="todaySleep">Sleep Hours</label>
+            <input id="todaySleep" name="todaySleep" type="number" min="0" max="16" step="0.5" required>
+          </div>
+          <div class="form-actions">
+            <p class="helper-text">Use this form for direct updates. Use the quick chips above when you only need a small bump.</p>
+            <button class="primary-button" type="submit">Save Check-In</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Log Activity</h2>
+            <p class="section-note">Capture workouts, walks, gym time, or any session you want to remember.</p>
+          </div>
+        </div>
+
+        <form id="workoutForm" class="form-grid">
+          <div class="field full">
+            <label for="workoutName">Activity Name</label>
+            <input id="workoutName" name="workoutName" type="text" maxlength="40" placeholder="Morning run" required>
+          </div>
+          <div class="field">
+            <label for="workoutDuration">Duration (minutes)</label>
+            <input id="workoutDuration" name="workoutDuration" type="number" min="5" step="5" required>
+          </div>
+          <div class="field">
+            <label for="workoutCalories">Calories Burned</label>
+            <input id="workoutCalories" name="workoutCalories" type="number" min="0" step="10" required>
+          </div>
+          <div class="field">
+            <label for="workoutSteps">Workout Steps</label>
+            <input id="workoutSteps" name="workoutSteps" type="number" min="0" step="100" placeholder="Optional">
+          </div>
+          <div class="field">
+            <label for="workoutDate">Date</label>
+            <input id="workoutDate" name="workoutDate" type="date" required>
+          </div>
+          <div class="form-actions">
+            <p class="helper-text">Workout steps feed into the daily total for the selected date.</p>
+            <button class="primary-button" type="submit">Add Activity</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="chart-panel panel">
+        <div class="section-head">
+          <div>
+            <h2>Weekly Active Minutes</h2>
+            <p id="weeklySummary" class="section-note">Your last seven days of movement at a glance.</p>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div id="weeklyChart" class="chart-grid"></div>
+        </div>
+      </section>
+
+      <section class="history-panel panel">
+        <div class="section-head">
+          <div>
+            <h2>Recent Activity</h2>
+            <p class="section-note">Your most recent sessions stay here until you delete them.</p>
+          </div>
+        </div>
+        <ul id="activityList" class="activity-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const storageKey = "momentum-fitness-tracker-state";
+
+    const elements = {
+      todayLabel: document.getElementById("todayLabel"),
+      heroInsight: document.getElementById("heroInsight"),
+      dailyScore: document.getElementById("dailyScore"),
+      streakLabel: document.getElementById("streakLabel"),
+      sessionCount: document.getElementById("sessionCount"),
+      caloriesBurned: document.getElementById("caloriesBurned"),
+      activeMinutesHero: document.getElementById("activeMinutesHero"),
+      stepsValue: document.getElementById("stepsValue"),
+      stepsMeta: document.getElementById("stepsMeta"),
+      stepsBar: document.getElementById("stepsBar"),
+      waterValue: document.getElementById("waterValue"),
+      waterMeta: document.getElementById("waterMeta"),
+      waterBar: document.getElementById("waterBar"),
+      activeValue: document.getElementById("activeValue"),
+      activeMeta: document.getElementById("activeMeta"),
+      activeBar: document.getElementById("activeBar"),
+      sleepValue: document.getElementById("sleepValue"),
+      sleepMeta: document.getElementById("sleepMeta"),
+      sleepBar: document.getElementById("sleepBar"),
+      goalsForm: document.getElementById("goalsForm"),
+      metricsForm: document.getElementById("metricsForm"),
+      workoutForm: document.getElementById("workoutForm"),
+      weeklySummary: document.getElementById("weeklySummary"),
+      weeklyChart: document.getElementById("weeklyChart"),
+      activityList: document.getElementById("activityList"),
+      resetDayBtn: document.getElementById("resetDayBtn")
+    };
+
+    let state = loadState();
+
+    function defaultState() {
+      return {
+        goals: {
+          steps: 9000,
+          water: 8,
+          activeMinutes: 45,
+          sleep: 8
+        },
+        daily: {},
+        workouts: []
+      };
+    }
+
+    function loadState() {
+      try {
+        const rawState = localStorage.getItem(storageKey);
+        if (!rawState) {
+          return defaultState();
+        }
+        return normalizeState(JSON.parse(rawState));
+      } catch (error) {
+        return defaultState();
+      }
+    }
+
+    function normalizeState(rawState) {
+      const baseline = defaultState();
+      const safeGoals = rawState && typeof rawState.goals === "object" ? rawState.goals : {};
+      const safeDaily = rawState && typeof rawState.daily === "object" ? rawState.daily : {};
+      const safeWorkouts = Array.isArray(rawState && rawState.workouts) ? rawState.workouts : [];
+
+      const normalizedDaily = {};
+      Object.keys(safeDaily).forEach((dateKey) => {
+        normalizedDaily[dateKey] = normalizeDailyEntry(safeDaily[dateKey]);
+      });
+
+      return {
+        goals: {
+          steps: positiveNumber(safeGoals.steps, baseline.goals.steps),
+          water: positiveNumber(safeGoals.water, baseline.goals.water),
+          activeMinutes: positiveNumber(safeGoals.activeMinutes, baseline.goals.activeMinutes),
+          sleep: positiveNumber(safeGoals.sleep, baseline.goals.sleep)
+        },
+        daily: normalizedDaily,
+        workouts: safeWorkouts
+          .map((workout) => normalizeWorkout(workout))
+          .filter(Boolean)
+      };
+    }
+
+    function normalizeDailyEntry(entry) {
+      return {
+        steps: nonNegativeNumber(entry && entry.steps, 0),
+        water: nonNegativeNumber(entry && entry.water, 0),
+        sleep: nonNegativeNumber(entry && entry.sleep, 0)
+      };
+    }
+
+    function normalizeWorkout(workout) {
+      if (!workout || !workout.name || !workout.date) {
+        return null;
+      }
+
+      return {
+        id: String(workout.id || Date.now()),
+        name: String(workout.name).trim().slice(0, 40),
+        duration: nonNegativeNumber(workout.duration, 0),
+        calories: nonNegativeNumber(workout.calories, 0),
+        steps: nonNegativeNumber(workout.steps, 0),
+        date: String(workout.date)
+      };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      } catch (error) {
+        console.error("Unable to save tracker state.", error);
+      }
+    }
+
+    function positiveNumber(value, fallback) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    }
+
+    function nonNegativeNumber(value, fallback) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+    }
+
+    function getTodayKey() {
+      const currentDate = new Date();
+      return [
+        currentDate.getFullYear(),
+        String(currentDate.getMonth() + 1).padStart(2, "0"),
+        String(currentDate.getDate()).padStart(2, "0")
+      ].join("-");
+    }
+
+    function shiftDate(date, offsetDays) {
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + offsetDays);
+      return nextDate;
+    }
+
+    function keyFromDate(date) {
+      return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+      ].join("-");
+    }
+
+    function ensureDailyEntry(dateKey) {
+      if (!state.daily[dateKey]) {
+        state.daily[dateKey] = {
+          steps: 0,
+          water: 0,
+          sleep: 0
+        };
+      }
+      return state.daily[dateKey];
+    }
+
+    function getWorkoutsForDate(dateKey) {
+      return state.workouts.filter((workout) => workout.date === dateKey);
+    }
+
+    function getWorkoutStatsForDate(dateKey) {
+      return getWorkoutsForDate(dateKey).reduce(
+        (stats, workout) => {
+          stats.duration += workout.duration;
+          stats.calories += workout.calories;
+          stats.steps += workout.steps;
+          return stats;
+        },
+        { duration: 0, calories: 0, steps: 0 }
+      );
+    }
+
+    function getDayMetrics(dateKey) {
+      const manualEntry = ensureDailyEntry(dateKey);
+      const workoutStats = getWorkoutStatsForDate(dateKey);
+
+      return {
+        manualSteps: manualEntry.steps,
+        steps: manualEntry.steps + workoutStats.steps,
+        water: manualEntry.water,
+        sleep: manualEntry.sleep,
+        activeMinutes: workoutStats.duration,
+        calories: workoutStats.calories,
+        workoutSteps: workoutStats.steps,
+        sessionCount: getWorkoutsForDate(dateKey).length
+      };
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat().format(Math.round(value));
+    }
+
+    function formatDate(dateKey) {
+      const [year, month, day] = dateKey.split("-").map(Number);
+      return new Intl.DateTimeFormat(undefined, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }).format(new Date(year, month - 1, day));
+    }
+
+    function formatShortDate(dateKey) {
+      const [year, month, day] = dateKey.split("-").map(Number);
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric"
+      }).format(new Date(year, month - 1, day));
+    }
+
+    function getLastSevenDays() {
+      const today = new Date();
+      const days = [];
+
+      for (let offset = 6; offset >= 0; offset -= 1) {
+        const currentDate = shiftDate(today, -offset);
+        const dateKey = keyFromDate(currentDate);
+        days.push({
+          dateKey,
+          label: currentDate.toLocaleDateString(undefined, { weekday: "short" }),
+          minutes: getDayMetrics(dateKey).activeMinutes
+        });
+      }
+
+      return days;
+    }
+
+    function getCurrentStreak() {
+      let streak = 0;
+      let cursor = new Date();
+
+      for (let i = 0; i < 365; i += 1) {
+        const dateKey = keyFromDate(cursor);
+        const dayMetrics = getDayMetrics(dateKey);
+
+        if (
+          dayMetrics.steps > 0 ||
+          dayMetrics.water > 0 ||
+          dayMetrics.sleep > 0 ||
+          dayMetrics.activeMinutes > 0
+        ) {
+          streak += 1;
+          cursor = shiftDate(cursor, -1);
+        } else {
+          break;
+        }
+      }
+
+      return streak;
+    }
+
+    function getDailyScore(dayMetrics) {
+      const ratios = [
+        Math.min(dayMetrics.steps / state.goals.steps, 1),
+        Math.min(dayMetrics.water / state.goals.water, 1),
+        Math.min(dayMetrics.activeMinutes / state.goals.activeMinutes, 1),
+        Math.min(dayMetrics.sleep / state.goals.sleep, 1)
+      ];
+
+      const score = ratios.reduce((total, value) => total + value, 0) / ratios.length;
+      return Math.round(score * 100);
+    }
+
+    function buildInsight(dayMetrics) {
+      const goals = [
+        {
+          label: "steps",
+          remaining: Math.max(0, state.goals.steps - dayMetrics.steps),
+          progress: dayMetrics.steps / state.goals.steps,
+          message: () => `${formatNumber(Math.max(0, state.goals.steps - dayMetrics.steps))} steps away from goal.`
+        },
+        {
+          label: "water",
+          remaining: Math.max(0, state.goals.water - dayMetrics.water),
+          progress: dayMetrics.water / state.goals.water,
+          message: () => `${Math.max(0, state.goals.water - dayMetrics.water)} more cups will finish hydration.`
+        },
+        {
+          label: "active",
+          remaining: Math.max(0, state.goals.activeMinutes - dayMetrics.activeMinutes),
+          progress: dayMetrics.activeMinutes / state.goals.activeMinutes,
+          message: () => `${Math.max(0, state.goals.activeMinutes - dayMetrics.activeMinutes)} more active minutes closes the movement target.`
+        },
+        {
+          label: "sleep",
+          remaining: Math.max(0, state.goals.sleep - dayMetrics.sleep),
+          progress: dayMetrics.sleep / state.goals.sleep,
+          message: () => `${Math.max(0, state.goals.sleep - dayMetrics.sleep).toFixed(1)} more hours reaches your sleep goal.`
+        }
+      ];
+      const unfinishedGoals = goals
+        .filter((goal) => goal.remaining > 0)
+        .sort((left, right) => right.progress - left.progress);
+
+      const allGoalsHit = unfinishedGoals.length === 0;
+      if (allGoalsHit) {
+        return "All four focus areas are on target today. Keep the streak moving and finish strong.";
+      }
+
+      if (dayMetrics.sessionCount === 0) {
+        return `Your board is live. Add a workout next and keep checking in on the basics. ${unfinishedGoals[0].message()}`;
+      }
+
+      return `You are building momentum. Closest finish: ${unfinishedGoals[0].message()}`;
+    }
+
+    function setProgress(barElement, ratio) {
+      const percentage = Math.max(0, Math.min(ratio * 100, 100));
+      barElement.style.width = percentage ? `${percentage}%` : "0";
+    }
+
+    function syncGoalForm() {
+      elements.goalsForm.goalSteps.value = state.goals.steps;
+      elements.goalsForm.goalWater.value = state.goals.water;
+      elements.goalsForm.goalActiveMinutes.value = state.goals.activeMinutes;
+      elements.goalsForm.goalSleep.value = state.goals.sleep;
+    }
+
+    function syncMetricsForm(dateKey) {
+      const entry = ensureDailyEntry(dateKey);
+      elements.metricsForm.todaySteps.value = entry.steps;
+      elements.metricsForm.todayWater.value = entry.water;
+      elements.metricsForm.todaySleep.value = entry.sleep;
+    }
+
+    function resetWorkoutForm() {
+      elements.workoutForm.reset();
+      elements.workoutForm.workoutDate.value = getTodayKey();
+    }
+
+    function renderOverview(dayMetrics) {
+      elements.sessionCount.textContent = String(dayMetrics.sessionCount);
+      elements.caloriesBurned.textContent = formatNumber(dayMetrics.calories);
+      elements.activeMinutesHero.textContent = `${formatNumber(dayMetrics.activeMinutes)} min`;
+
+      elements.stepsValue.textContent = formatNumber(dayMetrics.steps);
+      elements.stepsMeta.textContent = `Goal ${formatNumber(state.goals.steps)} | ${formatNumber(dayMetrics.workoutSteps)} from workouts`;
+      setProgress(elements.stepsBar, dayMetrics.steps / state.goals.steps);
+
+      elements.waterValue.textContent = `${formatNumber(dayMetrics.water)} cups`;
+      elements.waterMeta.textContent = `Goal ${formatNumber(state.goals.water)} cups`;
+      setProgress(elements.waterBar, dayMetrics.water / state.goals.water);
+
+      elements.activeValue.textContent = `${formatNumber(dayMetrics.activeMinutes)} min`;
+      elements.activeMeta.textContent = `Goal ${formatNumber(state.goals.activeMinutes)} min`;
+      setProgress(elements.activeBar, dayMetrics.activeMinutes / state.goals.activeMinutes);
+
+      elements.sleepValue.textContent = `${dayMetrics.sleep.toFixed(1)} hrs`;
+      elements.sleepMeta.textContent = `Goal ${state.goals.sleep.toFixed(1)} hrs`;
+      setProgress(elements.sleepBar, dayMetrics.sleep / state.goals.sleep);
+    }
+
+    function renderWeeklyChart() {
+      const days = getLastSevenDays();
+      const totalMinutes = days.reduce((sum, day) => sum + day.minutes, 0);
+      const bestDay = days.reduce(
+        (best, day) => (day.minutes > best.minutes ? day : best),
+        { dateKey: "", minutes: 0 }
+      );
+      const peakMinutes = Math.max(...days.map((day) => day.minutes), state.goals.activeMinutes, 1);
+
+      elements.weeklySummary.textContent = bestDay.minutes > 0
+        ? `${formatNumber(totalMinutes)} active minutes in the last 7 days. Best day: ${formatShortDate(bestDay.dateKey)} with ${formatNumber(bestDay.minutes)} minutes.`
+        : "No workouts logged in the last 7 days yet. Your chart will start filling in after the first session.";
+
+      elements.weeklyChart.innerHTML = "";
+
+      days.forEach((day) => {
+        const column = document.createElement("div");
+        column.className = "chart-column";
+
+        const value = document.createElement("span");
+        value.className = "chart-value";
+        value.textContent = `${formatNumber(day.minutes)}m`;
+
+        const track = document.createElement("div");
+        track.className = "chart-track";
+        track.title = `${formatShortDate(day.dateKey)}: ${formatNumber(day.minutes)} active minutes`;
+
+        const bar = document.createElement("div");
+        bar.className = "chart-bar";
+        bar.style.height = day.minutes === 0 ? "0" : `${Math.max((day.minutes / peakMinutes) * 100, 12)}%`;
+
+        const label = document.createElement("span");
+        label.className = "chart-label";
+        label.textContent = day.label;
+
+        track.appendChild(bar);
+        column.append(value, track, label);
+        elements.weeklyChart.appendChild(column);
+      });
+    }
+
+    function renderActivityList() {
+      const workouts = state.workouts
+        .slice()
+        .sort((left, right) => {
+          if (left.date !== right.date) {
+            return right.date.localeCompare(left.date);
+          }
+          return Number(right.id) - Number(left.id);
+        })
+        .slice(0, 8);
+
+      elements.activityList.innerHTML = "";
+
+      if (workouts.length === 0) {
+        const emptyState = document.createElement("li");
+        emptyState.className = "empty-state";
+        emptyState.textContent = "No activity logged yet. Add your first session to start the history.";
+        elements.activityList.appendChild(emptyState);
+        return;
+      }
+
+      workouts.forEach((workout) => {
+        const item = document.createElement("li");
+        item.className = "activity-item";
+
+        const main = document.createElement("div");
+        main.className = "activity-main";
+
+        const title = document.createElement("strong");
+        title.textContent = workout.name;
+
+        const details = document.createElement("span");
+        details.textContent = `${formatShortDate(workout.date)} | ${formatNumber(workout.duration)} min | ${formatNumber(workout.calories)} cal | ${formatNumber(workout.steps)} steps`;
+
+        const button = document.createElement("button");
+        button.className = "delete-button";
+        button.type = "button";
+        button.dataset.id = workout.id;
+        button.textContent = "Delete";
+
+        main.append(title, details);
+        item.append(main, button);
+        elements.activityList.appendChild(item);
+      });
+    }
+
+    function render() {
+      const todayKey = getTodayKey();
+      const todayMetrics = getDayMetrics(todayKey);
+      const score = getDailyScore(todayMetrics);
+      const streak = getCurrentStreak();
+
+      elements.todayLabel.textContent = formatDate(todayKey);
+      elements.heroInsight.textContent = buildInsight(todayMetrics);
+      elements.dailyScore.textContent = `${score}%`;
+      elements.streakLabel.textContent = `${streak} day${streak === 1 ? "" : "s"} in a row`;
+
+      renderOverview(todayMetrics);
+      renderWeeklyChart();
+      renderActivityList();
+    }
+
+    elements.goalsForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      state.goals.steps = positiveNumber(elements.goalsForm.goalSteps.value, state.goals.steps);
+      state.goals.water = positiveNumber(elements.goalsForm.goalWater.value, state.goals.water);
+      state.goals.activeMinutes = positiveNumber(elements.goalsForm.goalActiveMinutes.value, state.goals.activeMinutes);
+      state.goals.sleep = positiveNumber(elements.goalsForm.goalSleep.value, state.goals.sleep);
+
+      saveState();
+      syncGoalForm();
+      render();
+    });
+
+    elements.metricsForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const todayKey = getTodayKey();
+      const entry = ensureDailyEntry(todayKey);
+
+      entry.steps = nonNegativeNumber(elements.metricsForm.todaySteps.value, entry.steps);
+      entry.water = nonNegativeNumber(elements.metricsForm.todayWater.value, entry.water);
+      entry.sleep = nonNegativeNumber(elements.metricsForm.todaySleep.value, entry.sleep);
+
+      saveState();
+      syncMetricsForm(todayKey);
+      render();
+    });
+
+    elements.workoutForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const name = elements.workoutForm.workoutName.value.trim();
+      if (!name) {
+        return;
+      }
+
+      const workout = {
+        id: String(Date.now()),
+        name,
+        duration: nonNegativeNumber(elements.workoutForm.workoutDuration.value, 0),
+        calories: nonNegativeNumber(elements.workoutForm.workoutCalories.value, 0),
+        steps: nonNegativeNumber(elements.workoutForm.workoutSteps.value, 0),
+        date: elements.workoutForm.workoutDate.value || getTodayKey()
+      };
+
+      state.workouts.unshift(workout);
+      saveState();
+      resetWorkoutForm();
+      render();
+    });
+
+    document.querySelectorAll(".quick-action").forEach((button) => {
+      button.addEventListener("click", () => {
+        const todayKey = getTodayKey();
+        const entry = ensureDailyEntry(todayKey);
+        const field = button.dataset.field;
+        const amount = Number(button.dataset.amount);
+
+        if (!field || !Number.isFinite(amount)) {
+          return;
+        }
+
+        entry[field] = Number((entry[field] + amount).toFixed(1));
+        saveState();
+        syncMetricsForm(todayKey);
+        render();
+      });
+    });
+
+    elements.activityList.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const workoutId = target.dataset.id;
+      if (!workoutId) {
+        return;
+      }
+
+      state.workouts = state.workouts.filter((workout) => workout.id !== workoutId);
+      saveState();
+      render();
+    });
+
+    elements.resetDayBtn.addEventListener("click", () => {
+      const todayKey = getTodayKey();
+      const shouldReset = window.confirm("Clear today's metrics and workouts?");
+
+      if (!shouldReset) {
+        return;
+      }
+
+      state.daily[todayKey] = {
+        steps: 0,
+        water: 0,
+        sleep: 0
+      };
+      state.workouts = state.workouts.filter((workout) => workout.date !== todayKey);
+
+      saveState();
+      syncMetricsForm(todayKey);
+      resetWorkoutForm();
+      render();
+    });
+
+    syncGoalForm();
+    syncMetricsForm(getTodayKey());
+    resetWorkoutForm();
+    render();
+  </script>
+</body>
+</html>
