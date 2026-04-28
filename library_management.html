@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Library Management System</title>
+    <link rel="stylesheet" href="static/library_management.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">Basic GUI</p>
+        <h1>Mini Library Management System</h1>
+        <p class="intro">
+          Add books, register users, search the catalogue, and manage borrowing
+          with simple in-browser tracking.
+        </p>
+        <div class="hero-stats">
+          <article class="stat-card">
+            <span id="bookCount">0</span>
+            <p>Books</p>
+          </article>
+          <article class="stat-card">
+            <span id="userCount">0</span>
+            <p>Users</p>
+          </article>
+          <article class="stat-card">
+            <span id="borrowedCount">0</span>
+            <p>Borrowed</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <button class="tab-button active" type="button" data-tab="books">Book Management</button>
+          <button class="tab-button" type="button" data-tab="users">User Management</button>
+          <button class="tab-button" type="button" data-tab="borrow">Borrow / Return</button>
+        </div>
+
+        <section class="tab-panel active" data-panel="books">
+          <div class="panel-grid panel-grid-books">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Add New Book</h2>
+                <p>Store title and author, then track current status automatically.</p>
+              </div>
+              <form id="bookForm" class="form-grid">
+                <label>
+                  <span>Title</span>
+                  <input id="bookTitle" type="text" placeholder="Enter book title" required />
+                </label>
+                <label>
+                  <span>Author</span>
+                  <input id="bookAuthor" type="text" placeholder="Enter author name" required />
+                </label>
+                <button type="submit" class="primary-button">Add Book</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Search Books</h2>
+                <p>Filter by title or author.</p>
+              </div>
+              <div class="search-row">
+                <input id="searchInput" type="text" placeholder="Search by title or author" />
+                <button id="clearSearch" type="button" class="secondary-button">Show All</button>
+              </div>
+            </article>
+          </div>
+
+          <article class="panel">
+            <div class="panel-head">
+              <h2>All Books</h2>
+              <p>Availability updates immediately when a book is borrowed or returned.</p>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Book ID</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Status</th>
+                    <th>Borrowed By</th>
+                  </tr>
+                </thead>
+                <tbody id="bookTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="tab-panel" data-panel="users">
+          <div class="panel-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Register User</h2>
+                <p>Each new user gets a unique ID automatically.</p>
+              </div>
+              <form id="userForm" class="form-grid">
+                <label>
+                  <span>Name</span>
+                  <input id="userName" type="text" placeholder="Enter user name" required />
+                </label>
+                <button type="submit" class="primary-button">Register User</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Registered Users</h2>
+                <p>All users currently stored in the system.</p>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>User ID</th>
+                      <th>Name</th>
+                    </tr>
+                  </thead>
+                  <tbody id="userTableBody"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="borrow">
+          <div class="panel-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Borrow Book</h2>
+                <p>Only available books can be borrowed.</p>
+              </div>
+              <form id="borrowForm" class="form-grid">
+                <label>
+                  <span>Book</span>
+                  <select id="borrowBook" required></select>
+                </label>
+                <label>
+                  <span>User</span>
+                  <select id="borrowUser" required></select>
+                </label>
+                <button type="submit" class="primary-button">Borrow Book</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Return Book</h2>
+                <p>Return currently borrowed books to make them available again.</p>
+              </div>
+              <form id="returnForm" class="form-grid">
+                <label>
+                  <span>Borrowed Book</span>
+                  <select id="returnBook" required></select>
+                </label>
+                <button type="submit" class="primary-button">Return Book</button>
+              </form>
+            </article>
+          </div>
+
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Borrowing Status</h2>
+              <p>Track which user borrowed which book.</p>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Book ID</th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Borrower ID</th>
+                    <th>Borrower Name</th>
+                  </tr>
+                </thead>
+                <tbody id="borrowTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="static/library_management.js"></script>
+  </body>
+</html>
