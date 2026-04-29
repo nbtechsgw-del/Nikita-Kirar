@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Exam | ExamMate</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin-top: 80px;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .btn-success {
+      width: 100%;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark bg-success">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">🧑‍🏫 ExamMate | Create Exam</span>
+      <div>
+        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-light btn-sm me-2">Dashboard</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-light btn-sm">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Form Container -->
+  <div class="container">
+    <h3 class="text-center mb-4 text-success">Create a New Exam</h3>
+
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('create_exam') }}">
+      <!-- Exam Name -->
+      <div class="mb-3">
+        <label class="form-label">Exam Name</label>
+        <input type="text" class="form-control" name="exam_name" placeholder="e.g. Python Basics Test" required>
+      </div>
+
+      <!-- Subject -->
+      <div class="mb-3">
+        <label class="form-label">Subject</label>
+        <select class="form-select" name="subject" required>
+          <option value="" disabled selected>Select Subject</option>
+          <option value="Python">Python</option>
+          <option value="DBMS">DBMS</option>
+          <option value="AI">AI</option>
+          <option value="Networking">Networking</option>
+          <option value="General Knowledge">General Knowledge</option>
+        </select>
+      </div>
+
+      <!-- Difficulty -->
+      <div class="mb-3">
+        <label class="form-label">Difficulty Level</label>
+        <select class="form-select" name="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+
+      <!-- Number of Questions -->
+      <div class="mb-3">
+        <label class="form-label">Number of Questions</label>
+        <input type="number" class="form-control" name="total_questions" placeholder="e.g. 10" min="1" max="50" required>
+      </div>
+
+      <!-- Time Limit -->
+      <div class="mb-3">
+        <label class="form-label">Time Limit (minutes)</label>
+        <input type="number" class="form-control" name="time_limit_minutes" value="30" min="1" max="180" required>
+      </div>
+
+      <button type="submit" class="btn btn-success mt-3">Create Exam</button>
+    </form>
+  </div>
+
+</body>
+</html>

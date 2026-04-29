@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Teacher Dashboard | ExamMate</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background-color: #198754; }
+    .card:hover { transform: scale(1.03); transition: 0.3s; }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">🧑‍🏫 ExamMate | Teacher Panel</span>
+      <div>
+        <span class="text-white me-3">Welcome, {{ username }}</span>
+        <a href="{{ url_for('logout') }}" class="btn btn-light btn-sm">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row g-4">
+      <!-- Create Exam -->
+      <div class="col-md-3">
+        <div class="card shadow-sm text-center p-4">
+          <h4>➕ Create Exam</h4>
+          <p>Set up new tests and subjects</p>
+          <a href="/create_exam" class="btn btn-success">Create</a>
+        </div>
+      </div>
+
+      <!-- Manage Questions -->
+      <div class="col-md-3">
+        <div class="card shadow-sm text-center p-4">
+          <h4>🗂 Manage Questions</h4>
+          <p>Add, edit, or delete exam questions</p>
+          <a href="/manage_questions" class="btn btn-primary">Manage</a>
+        </div>
+      </div>
+
+      <!-- View Results -->
+      <div class="col-md-3">
+        <div class="card shadow-sm text-center p-4">
+          <h4>📈 View Results</h4>
+          <p>Analyze student performance</p>
+          <a href="/view_results" class="btn btn-warning">View</a>
+        </div>
+      </div>
+
+      <!-- 🧠 Start Exam (New Card) -->
+      <div class="col-md-3">
+        <div class="card shadow-sm text-center p-4">
+          <h4>🧠 Start Exam</h4>
+          <p>Generate quiz using AI or API</p>
+          <a href="/start_exam" class="btn btn-danger">Start</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optional analytics -->
+    <div class="mt-5">
+      <h4>Exam Summary</h4>
+      <canvas id="teacherChart" height="100"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('teacherChart');
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Completed Exams', 'Pending Exams', 'Upcoming Exams'],
+        datasets: [{
+          data: [10, 3, 5],
+          backgroundColor: ['#198754', '#ffc107', '#0d6efd']
+        }]
+      }
+    });
+  </script>
+</body>
+</html>

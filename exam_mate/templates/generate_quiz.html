@@ -1,0 +1,14 @@
+<h3>{{ exam.exam_name }} - {{ exam.subject }}</h3>
+<form>
+  {% for q in questions %}
+  <div class="mb-4">
+    <h5>Q{{ loop.index }}. {{ q.question|safe }}</h5>
+    {% for option in q.incorrect_answers + [q.correct_answer] %}
+      <div>
+        <input type="radio" name="q{{ loop.index }}" value="{{ option }}"> {{ option }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <button class="btn btn-success">Submit</button>
+</form>

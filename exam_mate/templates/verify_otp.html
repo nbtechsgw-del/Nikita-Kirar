@@ -1,0 +1,7 @@
+<h2>Enter OTP</h2>
+<form method="POST">
+  <label>OTP:</label>
+  <input type="text" name="otp" required>
+  <button type="submit">Verify</button>
+  {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
+</form>

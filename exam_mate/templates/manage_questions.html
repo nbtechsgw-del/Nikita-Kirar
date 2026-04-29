@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Questions | ExamMate</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .container { max-width: 900px; margin-top: 50px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="mb-4 text-center">🗂 Manage Questions</h2>
+
+    <form method="POST" class="card p-4 shadow-sm mb-5">
+      <div class="mb-3">
+        <label for="exam_id" class="form-label">Select Exam</label>
+        <select name="exam_id" id="exam_id" class="form-select" required>
+          <option value="">-- Choose Exam --</option>
+          {% for exam in exams %}
+          <option value="{{ exam.id }}">{{ exam.exam_name }} ({{ exam.subject }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Question</label>
+        <textarea name="question_text" class="form-control" rows="3" required></textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label>Option A</label>
+          <input type="text" name="option_a" class="form-control" required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label>Option B</label>
+          <input type="text" name="option_b" class="form-control" required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label>Option C</label>
+          <input type="text" name="option_c" class="form-control" required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label>Option D</label>
+          <input type="text" name="option_d" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Correct Option</label>
+        <select name="correct_option" class="form-select" required>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">Add Question</button>
+    </form>
+
+    <h4>All Questions</h4>
+    <table class="table table-bordered">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Exam</th>
+          <th>Question</th>
+          <th>Correct</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in questions %}
+        <tr>
+          <td>{{ q.id }}</td>
+          <td>{{ q.exam.exam_name }}</td>
+          <td>{{ q.question_text }}</td>
+          <td>{{ q.correct_option }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary mt-3">⬅ Back to Dashboard</a>
+  </div>
+</body>
+</html>

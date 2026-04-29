@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Take Exam | ExamMate</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-start gap-3">
+      <div>
+        <h2 class="mb-3">{{ exam.exam_name }}</h2>
+        <h5 class="text-muted">Subject: {{ exam.subject }}</h5>
+      </div>
+      <div class="alert alert-info mb-0">
+        Time left: <strong id="timer"></strong>
+      </div>
+    </div>
+    <hr>
+
+    {% if questions %}
+      <form method="post" id="examForm">
+        {% for q in questions %}
+          <div class="mb-4">
+            <strong>Q{{ loop.index }}. {{ q.question_text }}</strong><br>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="q{{ q.id }}" value="A">
+              <label class="form-check-label">{{ q.option_a }}</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="q{{ q.id }}" value="B">
+              <label class="form-check-label">{{ q.option_b }}</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="q{{ q.id }}" value="C">
+              <label class="form-check-label">{{ q.option_c }}</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="q{{ q.id }}" value="D">
+              <label class="form-check-label">{{ q.option_d }}</label>
+            </div>
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Submit Exam</button>
+      </form>
+    {% else %}
+      <div class="alert alert-warning">No questions available for this exam.</div>
+    {% endif %}
+  </div>
+  <script>
+    let remaining = Number("{{ remaining_seconds|default(0) }}");
+    const timer = document.getElementById('timer');
+    const form = document.getElementById('examForm');
+
+    function renderTimer() {
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      if (remaining <= 0 && form) {
+        form.submit();
+        return;
+      }
+      remaining -= 1;
+    }
+
+    renderTimer();
+    setInterval(renderTimer, 1000);
+  </script>
+</body>
+</html>
