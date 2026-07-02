@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="module-hero compact">
+    <p class="eyebrow">User</p>
+    <h1>User Module</h1>
+</section>
+
+<section class="section">
+    <p class="lead">Registered users: <strong>{{ user_count }}</strong></p>
+    <div class="hero-actions">
+        <a class="button" href="{{ url_for('register') }}">Register</a>
+        <a class="button ghost outline" href="{{ url_for('login') }}">Login</a>
+        <a class="button ghost outline" href="{{ url_for('booking_history') }}">My Bookings</a>
+        <a class="button ghost outline" href="/modules/payment">Payments</a>
+    </div>
+
+    <div class="feature-grid module-stats">
+        <article>
+            <h2>Payment Gateway Integration</h2>
+            <p class="muted">Checkout stores the selected UPI, card, or net banking gateway for each booking.</p>
+        </article>
+        <article>
+            <h2>Transaction Records</h2>
+            <p class="muted">The payment page lists gateway references, transaction IDs, status, and amount.</p>
+        </article>
+        <article>
+            <h2>Payment Confirmation</h2>
+            <p class="muted">Paid bookings generate a confirmation code and receipt page.</p>
+        </article>
+        <article>
+            <h2>Refund Processing</h2>
+            <p class="muted">Paid transactions include a refund request option with refund tracking.</p>
+        </article>
+    </div>
+</section>
+{% endblock %}

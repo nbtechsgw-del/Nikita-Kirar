@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <p class="eyebrow">TravelDesk</p>
+        <h1>Book Your Next Trip</h1>
+        <p>Find tour packages, hotels, bookings, payments, and feedback in one place.</p>
+        <div class="hero-actions">
+            <a class="button" href="{{ url_for('packages') }}">Explore Packages</a>
+            <a class="button ghost" href="{{ url_for('register') }}">Create Account</a>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-heading">
+        <h2>Featured Packages</h2>
+        <a href="{{ url_for('packages') }}">View all</a>
+    </div>
+    <div class="card-grid">
+        {% for package in packages %}
+            <article class="package-card">
+                <img src="{{ package.image_url }}" alt="{{ package.title }}">
+                <div>
+                    <p class="tag">{{ package.category }}</p>
+                    <h3>{{ package.title }}</h3>
+                    <p>{{ package.destination }} | {{ package.duration }}</p>
+                    <p>Boarding: {{ package.boarding_point or "Will be shared by admin" }}</p>
+                    <dl class="price-breakdown compact">
+                        <div><dt>Transport</dt><dd>Rs. {{ "%.0f"|format(package.transport_price) }}</dd></div>
+                        <div><dt>Food</dt><dd>Rs. {{ "%.0f"|format(package.food_price) }}</dd></div>
+                        <div><dt>Stay</dt><dd>By room</dd></div>
+                    </dl>
+                    <strong>Rs. {{ "%.0f"|format(package.price + package.transport_price + package.food_price) }}</strong>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <h2>Hotels</h2>
+    <div class="table-panel">
+        <table>
+            <thead>
+                <tr><th>Hotel</th><th>Destination</th><th>Room</th><th>Price/Night</th><th>Rating</th></tr>
+            </thead>
+            <tbody>
+                {% for hotel in hotels %}
+                    <tr>
+                        <td>{{ hotel.name }}</td>
+                        <td>{{ hotel.destination }}</td>
+                        <td>{{ hotel.room_type }}</td>
+                        <td>Rs. {{ "%.0f"|format(hotel.price_per_night) }}</td>
+                        <td>{{ hotel.rating }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block content %}
+{% set stats = stats|default({}) %}
+{% set reports = reports|default({}) %}
+<section class="section admin-section">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Admin Module</p>
+            <h1>Tourism Control Panel</h1>
+        </div>
+        <a class="button" href="/admin/reports/download">Download Report</a>
+    </div>
+
+    <div class="stats">
+        <article><span>Users</span><strong>{{ stats.users|default(0) }}</strong></article>
+        <article><span>Packages</span><strong>{{ stats.packages|default(0) }}</strong></article>
+        <article><span>Hotels</span><strong>{{ stats.hotels|default(0) }}</strong></article>
+        <article><span>Destinations</span><strong>{{ stats.destinations|default(0) }}</strong></article>
+        <article><span>Bookings</span><strong>{{ stats.bookings|default(0) }}</strong></article>
+        <article><span>Revenue</span><strong>Rs. {{ "%.0f"|format(stats.revenue|default(0)) }}</strong></article>
+    </div>
+
+    <div class="admin-grid">
+        <form class="form-card" method="post" action="/admin/packages" enctype="multipart/form-data">
+            <h2>Add Tour Package</h2>
+            <label>Title<input name="title" required></label>
+            <label>Destination<input name="destination" required></label>
+            <label>Category
+                <select name="category"><option>Domestic</option><option>International</option></select>
+            </label>
+            <label>Duration<input name="duration" required></label>
+            <label>Base Package Price<input type="number" name="price" min="1" step="0.01" required></label>
+            <label>Transport Price<input type="number" name="transport_price" min="0" step="0.01" value="0" required></label>
+            <label>Food Price<input type="number" name="food_price" min="0" step="0.01" value="0" required></label>
+            <label>Boarding Point<input name="boarding_point" placeholder="Example: Delhi Railway Station Gate 2"></label>
+            <label>Seats<input type="number" name="seats_available" min="0" required></label>
+            <label>Offer<input name="offer" value="Standard"></label>
+            <label>Image URL<input name="image_url" placeholder="Paste URL or upload below"></label>
+            <label>Upload Image<input type="file" name="package_image" accept="image/*"></label>
+            <label>Itinerary<textarea name="itinerary" rows="4" required></textarea></label>
+            <button class="button" type="submit">Add Package</button>
+        </form>
+
+        <div class="table-panel">
+            <h2>Booking Approvals</h2>
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>User</th><th>Package</th><th>Amount</th><th>Status</th><th>Payment</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                        <tr>
+                            {% set can_refund = booking.payment_status == "Paid" and booking.refund_status in [None, "", "Not Requested", "Rejected"] %}
+                            <td>#{{ booking.id }}</td>
+                            <td>{{ booking.name }}</td>
+                            <td>{{ booking.title }}<span>{{ booking.travelers }} travelers</span></td>
+                            <td>Rs. {{ "%.0f"|format(booking.total_amount) }}</td>
+                            <td><span class="status">{{ booking.status }}</span></td>
+                            <td>
+                                {{ booking.payment_status or "Not recorded" }}
+                                <span>{{ booking.transaction_id or "" }}</span>
+                                {% if booking.refund_status %}
+                                    <span>Refund: {{ booking.refund_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions">
+                                {% if booking.status != "Confirmed" %}
+                                    <form method="post" action="/admin/bookings/{{ booking.id }}/approve">
+                                        <button type="submit">Approve</button>
+                                    </form>
+                                {% endif %}
+                                {% if booking.status != "Cancelled" or can_refund %}
+                                    <form class="booking-action-form" method="post" action="/admin/bookings/{{ booking.id }}/cancel">
+                                        {% if can_refund %}
+                                            <select name="refund_action" aria-label="Refund option for booking #{{ booking.id }}">
+                                                <option value="none">Cancel only</option>
+                                                <option value="request">Cancel + request refund</option>
+                                                <option value="process">Cancel + refund now</option>
+                                            </select>
+                                        {% endif %}
+                                        <button type="submit">{% if booking.status == "Cancelled" %}Update Refund{% else %}Cancel{% endif %}</button>
+                                    </form>
+                                {% endif %}
+                                {% if booking.payment_status == "Refund Requested" and booking.refund_status == "Requested" %}
+                                    <form method="post" action="/admin/payments/{{ booking.payment_id }}/refund/approve">
+                                        <button type="submit">Approve Refund</button>
+                                    </form>
+                                    <form method="post" action="/admin/payments/{{ booking.payment_id }}/refund/reject">
+                                        <button type="submit">Reject Refund</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="management-grid">
+        <form class="form-card" method="post" action="/admin/hotels">
+            <h2>Add Hotel</h2>
+            <label>Name<input name="name" required></label>
+            <label>Destination
+                <select name="destination" required>
+                    <option value="">Select destination</option>
+                    {% for destination in destinations %}
+                        <option value="{{ destination.name }}">{{ destination.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Rooms Available<input type="number" name="rooms_available" min="0" required></label>
+            <label>Rating<input type="number" name="rating" min="0" max="5" step="0.1" required></label>
+            <label>Facilities<textarea name="facilities" rows="3" placeholder="Wi-Fi, breakfast, pool, parking, travel desk"></textarea></label>
+            <div class="room-type-picker">
+                <strong>Available Room Types</strong>
+                <div class="room-type-head">
+                    <span>Room Type</span>
+                    <span>Price</span>
+                </div>
+                {% for room_type in room_type_choices %}
+                    <label>
+                        <span>{{ room_type }}</span>
+                        <input type="number" name="room_price_{{ room_type }}" min="1" step="0.01" placeholder="Price per night">
+                    </label>
+                {% endfor %}
+            </div>
+            <button class="button" type="submit">Add Hotel</button>
+        </form>
+
+        <form class="form-card" method="post" action="/admin/destinations">
+            <h2>Add Destination</h2>
+            <label>Name<input name="name" required></label>
+            <label>Country<input name="country" required></label>
+            <label>Best Season<input name="best_season" required></label>
+            <label>Image URL<input name="image_url" placeholder="Optional"></label>
+            <label>Description<textarea name="description" rows="4" required></textarea></label>
+            <button class="button" type="submit">Add Destination</button>
+        </form>
+
+        <div class="summary-panel">
+            <h2>Report Summary</h2>
+            <dl class="report-list">
+                <div><dt>Pending bookings</dt><dd>{{ reports.pending_bookings|default(0) }}</dd></div>
+                <div><dt>Confirmed bookings</dt><dd>{{ reports.confirmed_bookings|default(0) }}</dd></div>
+                <div><dt>Cancelled bookings</dt><dd>{{ reports.cancelled_bookings|default(0) }}</dd></div>
+                <div><dt>Paid payments</dt><dd>{{ reports.paid_payments|default(0) }}</dd></div>
+                <div><dt>Refund requests</dt><dd>{{ reports.refund_requests|default(0) }}</dd></div>
+                <div><dt>Failed payments</dt><dd>{{ reports.failed_payments|default(0) }}</dd></div>
+                <div><dt>Refunded payments</dt><dd>{{ reports.refunded_payments|default(0) }}</dd></div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="table-panel" id="manage-packages">
+        <h2>Manage Tour Packages</h2>
+        <table>
+            <thead><tr><th>Package</th><th>Destination</th><th>Package Details</th><th>Seats</th><th>Edit</th></tr></thead>
+            <tbody>
+                {% for package in packages %}
+                    <tr>
+                        <td>{{ package.title }}<span>{{ package.category }} - {{ package.offer }}</span></td>
+                        <td>{{ package.destination }}<span>Boarding: {{ package.boarding_point or "Not added" }}</span></td>
+                        <td>
+                            Rs. {{ "%.0f"|format(package.price + package.transport_price + package.food_price) }}
+                            <span>Base: Rs. {{ "%.0f"|format(package.price) }}</span>
+                            <span>Transport: Rs. {{ "%.0f"|format(package.transport_price) }}</span>
+                            <span>Food: Rs. {{ "%.0f"|format(package.food_price) }}</span>
+                        </td>
+                        <td>{{ package.seats_available }}</td>
+                        <td>
+                            <details class="edit-details">
+                                <summary>Edit</summary>
+                                <form class="compact-form" method="post" action="/admin/packages/{{ package.id }}/edit" enctype="multipart/form-data">
+                                    <input name="title" value="{{ package.title }}" required>
+                                    <input name="destination" value="{{ package.destination }}" required>
+                                    <select name="category">
+                                        <option {% if package.category == "Domestic" %}selected{% endif %}>Domestic</option>
+                                        <option {% if package.category == "International" %}selected{% endif %}>International</option>
+                                    </select>
+                                    <input name="duration" value="{{ package.duration }}" required>
+                                    <input type="number" name="price" value="{{ package.price }}" min="1" step="0.01" required>
+                                    <input type="number" name="transport_price" value="{{ package.transport_price }}" min="0" step="0.01" required>
+                                    <input type="number" name="food_price" value="{{ package.food_price }}" min="0" step="0.01" required>
+                                    <input name="boarding_point" value="{{ package.boarding_point }}" placeholder="Boarding point">
+                                    <input type="number" name="seats_available" value="{{ package.seats_available }}" min="0" required>
+                                    <input name="offer" value="{{ package.offer }}">
+                                    <input name="image_url" value="{{ package.image_url }}">
+                                    <input type="file" name="package_image" accept="image/*">
+                                    <textarea name="itinerary" rows="3" required>{{ package.itinerary }}</textarea>
+                                    <button type="submit">Save</button>
+                                </form>
+                                <form class="delete-form" method="post" action="/admin/packages/{{ package.id }}/delete">
+                                    <button type="submit">Delete</button>
+                                </form>
+                            </details>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-panel" id="manage-hotels">
+        <h2>Hotel Management Table</h2>
+        <table>
+            <thead><tr><th>ID</th><th>Hotel</th><th>Destination</th><th>Room</th><th>Facilities</th><th>Room Options</th><th>Rooms</th><th>Rating</th><th>Edit</th></tr></thead>
+            <tbody>
+                {% for hotel in hotels %}
+                    <tr>
+                        <td>#{{ hotel.id }}</td>
+                        <td>{{ hotel.name }}</td>
+                        <td>{{ hotel.destination }}</td>
+                        <td>{{ hotel.room_type }}<span>Rs. {{ "%.0f"|format(hotel.price_per_night) }}/night</span></td>
+                        <td>{{ hotel.facilities or "Not added" }}</td>
+                        <td>{{ hotel.room_options or "Not added" }}</td>
+                        <td>{{ hotel.rooms_available }}</td>
+                        <td>{{ hotel.rating }}</td>
+                        <td>
+                            <details class="edit-details">
+                                <summary>Edit</summary>
+                                <form class="compact-form" method="post" action="/admin/hotels/{{ hotel.id }}/edit">
+                                    <input name="name" value="{{ hotel.name }}" required>
+                                    <input name="destination" value="{{ hotel.destination }}" required>
+                                    <input name="room_type" value="{{ hotel.room_type }}" required>
+                                    <input type="number" name="price_per_night" value="{{ hotel.price_per_night }}" min="1" step="0.01" required>
+                                    <input type="number" name="rooms_available" value="{{ hotel.rooms_available }}" min="0" required>
+                                    <input type="number" name="rating" value="{{ hotel.rating }}" min="0" max="5" step="0.1" required>
+                                    <textarea name="facilities" rows="3">{{ hotel.facilities }}</textarea>
+                                    <textarea name="room_options" rows="3">{{ hotel.room_options }}</textarea>
+                                    <button type="submit">Save</button>
+                                </form>
+                                <form class="delete-form" method="post" action="/admin/hotels/{{ hotel.id }}/delete">
+                                    <button type="submit">Delete</button>
+                                </form>
+                            </details>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="9">No hotels added yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-panel" id="manage-destinations">
+        <h2>Destination Management Table</h2>
+        <table>
+            <thead><tr><th>ID</th><th>Destination</th><th>Country</th><th>Best Season</th><th>Image</th><th>Description</th><th>Edit</th></tr></thead>
+            <tbody>
+                {% for destination in destinations %}
+                    <tr>
+                        <td>#{{ destination.id }}</td>
+                        <td>{{ destination.name }}</td>
+                        <td>{{ destination.country }}</td>
+                        <td>{{ destination.best_season }}</td>
+                        <td><a class="table-link" href="{{ destination.image_url }}" target="_blank">View</a></td>
+                        <td>{{ destination.description }}</td>
+                        <td>
+                            <details class="edit-details">
+                                <summary>Edit</summary>
+                                <form class="compact-form" method="post" action="/admin/destinations/{{ destination.id }}/edit">
+                                    <input name="name" value="{{ destination.name }}" required>
+                                    <input name="country" value="{{ destination.country }}" required>
+                                    <input name="best_season" value="{{ destination.best_season }}" required>
+                                    <input name="image_url" value="{{ destination.image_url }}" required>
+                                    <textarea name="description" rows="3" required>{{ destination.description }}</textarea>
+                                    <button type="submit">Save</button>
+                                </form>
+                                <form class="delete-form" method="post" action="/admin/destinations/{{ destination.id }}/delete">
+                                    <button type="submit">Delete</button>
+                                </form>
+                            </details>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="7">No destinations added yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-panel">
+        <h2>Registered Users</h2>
+        <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Created</th></tr></thead>
+            <tbody>
+                {% for user in users %}
+                    <tr><td>{{ user.id }}</td><td>{{ user.name }}</td><td>{{ user.email }}</td><td>{{ user.created_at }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-panel" id="feedback">
+        <h2>User Feedback</h2>
+        <table>
+            <thead><tr><th>ID</th><th>User</th><th>Package</th><th>Rating</th><th>Comments</th><th>Date</th></tr></thead>
+            <tbody>
+                {% for feedback in feedback_list %}
+                    <tr>
+                        <td>#{{ feedback.id }}</td>
+                        <td>{{ feedback.name }}<span>{{ feedback.email }}</span></td>
+                        <td>{{ feedback.title }}</td>
+                        <td>{{ feedback.rating }}/5</td>
+                        <td>{{ feedback.comments }}</td>
+                        <td>{{ feedback.created_at }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6">No user feedback submitted yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

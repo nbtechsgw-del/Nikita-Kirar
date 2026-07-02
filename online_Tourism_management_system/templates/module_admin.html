@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="module-hero compact">
+    <p class="eyebrow">Admin</p>
+    <h1>Admin Module</h1>
+</section>
+
+<section class="section">
+    <div class="stats module-stats">
+        <article><span>Users</span><strong>{{ stats.users }}</strong></article>
+        <article><span>Packages</span><strong>{{ stats.packages }}</strong></article>
+        <article><span>Bookings</span><strong>{{ stats.bookings }}</strong></article>
+        <article><span>Payments</span><strong>{{ stats.payments }}</strong></article>
+    </div>
+    {% if current_user and current_user.role == "admin" %}
+        <a class="button" href="/admin">Open Admin Dashboard</a>
+    {% else %}
+        <a class="button" href="{{ url_for('admin_login') }}">Admin Login</a>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="module-hero">
+    <p class="eyebrow">Select</p>
+    <h1>Modules</h1>
+</section>
+
+<section class="section">
+    <div class="module-grid">
+        {% for module in modules %}
+            <a class="module-card" href="{{ '/modules/payment' if module.endpoint == 'payment_module' else url_for(module.endpoint) }}">
+                <span>{{ loop.index }}</span>
+                <h2>{{ module.name }}</h2>
+            </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

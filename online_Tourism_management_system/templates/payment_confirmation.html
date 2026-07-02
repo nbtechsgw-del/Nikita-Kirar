@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="form-page two-column">
+    <div class="summary-panel">
+        <p class="eyebrow">Payment Confirmation</p>
+        <h1>{{ payment.status }}</h1>
+        <p>{{ payment.gateway }} reference {{ payment.gateway_reference }}</p>
+        <div class="receipt-list">
+            <div><span>Transaction</span><strong>{{ payment.transaction_id }}</strong></div>
+            <div><span>Confirmation</span><strong>{{ payment.confirmation_code or "Not issued" }}</strong></div>
+            <div><span>Amount</span><strong>Rs. {{ "%.0f"|format(payment.total_amount) }}</strong></div>
+            <div><span>Booking</span><strong>{{ payment.booking_status }}</strong></div>
+        </div>
+        <a class="button full" href="{{ url_for('booking_history') }}">View Bookings</a>
+    </div>
+
+    <div class="summary-panel">
+        <h2>{{ payment.title }}</h2>
+        <p>{{ payment.destination }}</p>
+        <p><strong>Boarding point:</strong> {{ payment.boarding_point or "Will be shared by admin" }}</p>
+        <p>{{ payment.check_in }} to {{ payment.check_out }}</p>
+        <dl class="price-breakdown">
+            <div><dt>Base package</dt><dd>Rs. {{ "%.0f"|format(payment.package_price) }}</dd></div>
+            <div><dt>Transport</dt><dd>Rs. {{ "%.0f"|format(payment.transport_price) }}</dd></div>
+            <div><dt>Food</dt><dd>Rs. {{ "%.0f"|format(payment.food_price) }}</dd></div>
+            <div>
+                <dt>Stay</dt>
+                <dd>
+                    {% if payment.selected_room_type %}
+                        {{ payment.selected_room_type }} - Rs. {{ "%.0f"|format(payment.selected_room_price) }}/night for {{ payment.hotel_nights }} night(s)
+                    {% else %}
+                        Not selected
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+        <p class="muted">Payment method: {{ payment.method }}</p>
+        <p class="muted">Refund status: {{ payment.refund_status }}</p>
+    </div>
+</section>
+{% endblock %}

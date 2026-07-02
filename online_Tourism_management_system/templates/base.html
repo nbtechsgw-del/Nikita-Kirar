@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title or "Online Tourism Management System" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='tourism.css') }}">
+</head>
+<body>
+    <nav class="topbar">
+        <a class="brand" href="{{ url_for('home') }}">TravelDesk</a>
+        <div class="nav-links">
+            <a href="{{ url_for('packages') }}">Packages</a>
+            {% if current_user %}
+                <a href="{{ url_for('booking_history') }}">Bookings</a>
+                <a href="/modules/payment">Payments</a>
+                {% if current_user.role == "admin" %}
+                    <a href="/admin">Admin</a>
+                    <a href="/admin#manage-packages">Manage Packages</a>
+                {% else %}
+                    <a href="{{ url_for('feedback') }}">Feedback</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a class="button small" href="{{ url_for('register') }}">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-wrap">
+                {% for category, message in messages %}
+                    <p class="flash {{ category }}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main>
+        <button class="back-button" type="button" onclick="goBack()">Back</button>
+        {% block content %}{% endblock %}
+    </main>
+    <script>
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = "/";
+            }
+        }
+    </script>
+</body>
+</html>

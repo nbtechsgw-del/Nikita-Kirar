@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+    <h1>{% if is_admin %}Confirmed User Bookings{% else %}Booking History{% endif %}</h1>
+    <div class="table-panel">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    {% if is_admin %}<th>User</th>{% endif %}
+                    <th>Package</th><th>Hotel</th><th>Travelers</th><th>Amount</th><th>Status</th><th>Payment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                    <tr>
+                        <td>#{{ booking.id }}</td>
+                        {% if is_admin %}<td>{{ booking.user_name }}</td>{% endif %}
+                        <td>
+                            {{ booking.title }}<br><span>{{ booking.destination }}</span>
+                            <span>Boarding: {{ booking.boarding_point or "Will be shared by admin" }}</span>
+                            <span>Base: Rs. {{ "%.0f"|format(booking.package_price) }} | Transport: Rs. {{ "%.0f"|format(booking.transport_price) }} | Food: Rs. {{ "%.0f"|format(booking.food_price) }}</span>
+                        </td>
+                        <td>
+                            {{ booking.hotel_name or "Not selected" }}
+                            {% if booking.selected_room_type %}
+                                <span>{{ booking.selected_room_type }} - Rs. {{ "%.0f"|format(booking.selected_room_price) }}/night for {{ booking.hotel_nights }} night(s)</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ booking.travelers }}</td>
+                        <td>Rs. {{ "%.0f"|format(booking.total_amount) }}</td>
+                        <td><span class="status">{{ booking.status }}</span></td>
+                        <td>
+                            {{ booking.payment_status }}<br>
+                            <span>{{ booking.gateway }} - {{ booking.transaction_id }}</span>
+                            {% if booking.payment_id %}
+                                <a class="table-link" href="{{ url_for('payment_confirmation', payment_id=booking.payment_id) }}">Receipt</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="{% if is_admin %}8{% else %}7{% endif %}">No bookings yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

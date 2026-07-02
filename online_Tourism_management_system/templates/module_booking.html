@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="module-hero compact">
+    <p class="eyebrow">Bookings</p>
+    <h1>Bookings</h1>
+</section>
+
+<section class="section">
+    <div class="table-panel">
+        <h2>Booking Records</h2>
+        <table>
+            <thead><tr><th>ID</th><th>User</th><th>Package</th><th>Hotel</th><th>Travelers</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for booking in bookings %}
+                    <tr>
+                        <td>#{{ booking.id }}</td>
+                        <td>{{ booking.name }}</td>
+                        <td>{{ booking.title }}</td>
+                        <td>{{ booking.hotel_name or "Not selected" }}</td>
+                        <td>{{ booking.travelers }}</td>
+                        <td>Rs. {{ "%.0f"|format(booking.total_amount) }}</td>
+                        <td>{{ booking.status }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="7">No booking records available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

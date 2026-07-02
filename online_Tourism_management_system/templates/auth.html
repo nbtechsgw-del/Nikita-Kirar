@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="form-page">
+    <form class="form-card" method="post">
+        <h1>
+            {% if mode == "register" %}
+                Create Account
+            {% elif mode == "admin_login" %}
+                Admin Login
+            {% else %}
+                User Login
+            {% endif %}
+        </h1>
+        {% if mode == "register" %}
+            <label>Name<input name="name" required></label>
+            <div class="role-picker">
+                <label>
+                    <input type="radio" name="role" value="user" checked>
+                    <span>User</span>
+                </label>
+                <label>
+                    <input type="radio" name="role" value="admin">
+                    <span>Admin</span>
+                </label>
+            </div>
+        {% endif %}
+        <label>Email<input type="email" name="email" required></label>
+        <label>Password<input type="password" name="password" required minlength="6"></label>
+        {% if mode in ["register", "login", "admin_login"] %}
+            <label>
+                Admin Authentication Code
+                <input name="admin_code" placeholder="Required only for admin accounts" {% if mode == "admin_login" %}required{% endif %}>
+            </label>
+        {% endif %}
+        <button class="button" type="submit">
+            {{ "Register" if mode == "register" else "Login" }}
+        </button>
+    </form>
+</section>
+{% endblock %}

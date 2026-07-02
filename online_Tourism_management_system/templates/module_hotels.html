@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="module-hero compact">
+    <p class="eyebrow">Hotels</p>
+    <h1>Hotels</h1>
+</section>
+
+<section class="section">
+    <form class="filter-card" method="get">
+        <label>Destination
+            <select name="destination">
+                <option value="">Every destination</option>
+                {% for destination in destinations %}
+                    <option value="{{ destination.name }}" {% if selected_destination == destination.name %}selected{% endif %}>{{ destination.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Minimum Price
+            <input type="number" name="min_price" min="0" step="0.01" value="{{ min_price }}" placeholder="Rs.">
+        </label>
+        <label>Maximum Price
+            <input type="number" name="max_price" min="0" step="0.01" value="{{ max_price }}" placeholder="Rs.">
+        </label>
+        <button class="button" type="submit">Search Hotels</button>
+        <a class="button ghost" href="{{ url_for('hotel_module') }}">Clear</a>
+    </form>
+
+    <div class="table-panel">
+        <table>
+            <thead>
+                <tr><th>Hotel</th><th>Destination</th><th>Facilities</th><th>Room Choices</th><th>Rooms</th><th>Rating</th></tr>
+            </thead>
+            <tbody>
+                {% for hotel in hotels %}
+                    <tr>
+                        <td>{{ hotel.name }}<span>{{ hotel.room_type }} from Rs. {{ "%.0f"|format(hotel.price_per_night) }}/night</span></td>
+                        <td>{{ hotel.destination }}</td>
+                        <td>{{ hotel.facilities or "Facilities details are not available yet." }}</td>
+                        <td>
+                            {% for option in hotel.room_options_list %}
+                                <span>{{ option.label }} - Rs. {{ "%.0f"|format(option.price) }}/night</span>
+                            {% else %}
+                                Room pricing is not available yet.
+                            {% endfor %}
+                        </td>
+                        <td>{{ hotel.rooms_available }}</td>
+                        <td>{{ hotel.rating }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6">No hotels match this destination and price range.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="form-page two-column">
+    <div class="summary-panel">
+        <img src="{{ package.image_url }}" alt="{{ package.title }}">
+        <h1>{{ package.title }}</h1>
+        <p>{{ package.destination }} · {{ package.duration }}</p>
+        <p><strong>Boarding point:</strong> {{ package.boarding_point or "Will be shared by admin" }}</p>
+        <p>{{ package.itinerary }}</p>
+        <dl class="price-breakdown">
+            <div><dt>Base package</dt><dd>Rs. {{ "%.0f"|format(package.price) }}</dd></div>
+            <div><dt>Transport</dt><dd>Rs. {{ "%.0f"|format(package.transport_price) }}</dd></div>
+            <div><dt>Food</dt><dd>Rs. {{ "%.0f"|format(package.food_price) }}</dd></div>
+            <div><dt>Stay</dt><dd>Based on selected room</dd></div>
+        </dl>
+        <strong>Package subtotal per traveler: Rs. {{ "%.0f"|format(package.price + package.transport_price + package.food_price) }}</strong>
+    </div>
+    <form class="form-card" method="post">
+        <h2>Booking Details</h2>
+        <label>Travelers<input type="number" name="travelers" min="1" max="{{ package.seats_available }}" value="1" required></label>
+        <div class="hotel-room-list">
+            <h3>Hotel and Room Selection</h3>
+            <div class="booking-price-filter">
+                <label>Minimum Price
+                    <input type="number" name="min_price" min="0" step="0.01" value="{{ min_price }}" placeholder="Rs.">
+                </label>
+                <label>Maximum Price
+                    <input type="number" name="max_price" min="0" step="0.01" value="{{ max_price }}" placeholder="Rs.">
+                </label>
+                <button class="button" type="submit" formmethod="get" formnovalidate>Search Hotels</button>
+                <a class="button ghost" href="{{ url_for('book_package', package_id=package.id) }}">Clear</a>
+            </div>
+            <label class="room-option">
+                <input type="radio" name="room_choice" value="none" checked>
+                <span>
+                    <strong>No hotel required</strong>
+                    <small>Book only the travel package.</small>
+                </span>
+            </label>
+            {% for hotel in hotels %}
+                <article class="hotel-room-card">
+                    <h4>{{ hotel.name }}</h4>
+                    <p>{{ hotel.destination }} - {{ hotel.rating }}/5 rating - {{ hotel.rooms_available }} rooms available</p>
+                    <p>{{ hotel.facilities or "Facilities details are not available yet." }}</p>
+                    <div class="room-options-grid">
+                        {% for option in hotel.room_options_list %}
+                            <label class="room-option">
+                                <input type="radio" name="room_choice" value="{{ hotel.id }}:{{ loop.index0 }}">
+                                <span>
+                                    <strong>{{ option.label }}</strong>
+                                    <small>Stay price: Rs. {{ "%.0f"|format(option.price) }}/night</small>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% else %}
+                {% if has_destination_hotels %}
+                    <p class="muted">No hotels in this destination match the selected price range.</p>
+                {% else %}
+                    <p class="muted">No extra hotels are available for this destination.</p>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <label>Check-in<input type="date" name="check_in" required></label>
+        <label>Check-out<input type="date" name="check_out" required></label>
+        <label>Payment Method
+            <select name="payment_method" required>
+                <option>UPI</option>
+                <option>Credit Card</option>
+                <option>Debit Card</option>
+                <option>Net Banking</option>
+            </select>
+        </label>
+        <button class="button" type="submit">Pay and Confirm</button>
+    </form>
+</section>
+{% endblock %}

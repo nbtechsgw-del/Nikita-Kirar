@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="module-hero compact">
+    <p class="eyebrow">Feedback</p>
+    <h1>Feedback</h1>
+</section>
+
+<section class="section">
+    <div class="table-panel">
+        <h2>Customer Feedback</h2>
+        <table>
+            <thead><tr><th>User</th><th>Package</th><th>Rating</th><th>Comments</th><th>Date</th></tr></thead>
+            <tbody>
+                {% for review in reviews %}
+                    <tr>
+                        <td>{{ review.name }}</td>
+                        <td>{{ review.title }}</td>
+                        <td>{{ review.rating }}/5</td>
+                        <td>{{ review.comments }}</td>
+                        <td>{{ review.created_at }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5">No feedback submitted yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a class="button module-action" href="{{ url_for('feedback') }}">Submit Feedback</a>
+</section>
+{% endblock %}

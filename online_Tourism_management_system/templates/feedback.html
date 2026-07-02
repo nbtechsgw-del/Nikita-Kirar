@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="form-page">
+    <form class="form-card" method="post">
+        <h1>Submit Feedback</h1>
+        <label>Package
+            <select name="package_id" required>
+                {% for package in packages %}
+                    <option value="{{ package.id }}">{{ package.title }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Rating
+            <select name="rating" required>
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Average</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Bad</option>
+            </select>
+        </label>
+        <label>Comments<textarea name="comments" rows="5" required></textarea></label>
+        <button class="button" type="submit">Save Feedback</button>
+    </form>
+</section>
+{% endblock %}

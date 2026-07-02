@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="module-hero compact">
+    <p class="eyebrow">Packages</p>
+    <h1>Tour Packages</h1>
+</section>
+
+<section class="section">
+    <div class="card-grid">
+        {% for package in packages %}
+            <article class="package-card">
+                <img src="{{ package.image_url }}" alt="{{ package.title }}">
+                <div>
+                    <p class="tag">{{ package.category }} | {{ package.offer }}</p>
+                    <h3>{{ package.title }}</h3>
+                    <p>{{ package.destination }} | {{ package.duration }}</p>
+                    <p>Boarding: {{ package.boarding_point or "Will be shared by admin" }}</p>
+                    <p>{{ package.itinerary }}</p>
+                    <dl class="price-breakdown">
+                        <div><dt>Base package</dt><dd>Rs. {{ "%.0f"|format(package.price) }}</dd></div>
+                        <div><dt>Transport</dt><dd>Rs. {{ "%.0f"|format(package.transport_price) }}</dd></div>
+                        <div><dt>Food</dt><dd>Rs. {{ "%.0f"|format(package.food_price) }}</dd></div>
+                        <div><dt>Stay</dt><dd>As per selected room</dd></div>
+                    </dl>
+                    <div class="card-footer">
+                        <strong>Rs. {{ "%.0f"|format(package.price + package.transport_price + package.food_price) }}</strong>
+                        <span>{{ package.seats_available }} seats</span>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    {% if current_user and current_user.role == "admin" %}
+        <a class="button module-action" href="/admin#manage-packages">Manage Packages</a>
+    {% else %}
+        <a class="button module-action" href="{{ url_for('packages') }}">Search Packages</a>
+    {% endif %}
+</section>
+{% endblock %}
