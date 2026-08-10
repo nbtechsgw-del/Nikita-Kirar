@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite
+*.sqlite3
+
+frontend/node_modules/
+frontend/build/
+frontend/build_codex_check/
+frontend/build_codex_check_713/
+frontend/build_codex_workflow_check/
+
+*.log
