@@ -263,3 +263,192 @@ def init_db():
         );
         """
     )
+    admin = db.execute("SELECT user_id FROM users WHERE email = ?", ("admin@example.com",)).fetchone()
+    if not admin:
+        db.execute(
+            """
+            INSERT INTO users (full_name, email, mobile_number, password, role, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "Admin User",
+                "admin@example.com",
+                "9999999999",
+                generate_password_hash("admin123"),
+                "admin",
+                now_text(),
+            ),
+        )
+    db.commit()
+    db.close()
+
+
+BASE_TEMPLATE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | Interview Tracking</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d9dee8;
+      --accent: #16745f;
+      --accent-dark: #0f5f4d;
+      --danger: #b42318;
+      --warn: #b54708;
+      --info: #175cd3;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 Arial, Helvetica, sans-serif;
+    }
+    a { color: var(--accent-dark); text-decoration: none; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 245px 1fr; }
+    .sidebar {
+      background: #17202a;
+      color: #f8fafc;
+      padding: 22px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+    .nav a {
+      display: block;
+      color: #d7dde7;
+      padding: 9px 10px;
+      border-radius: 6px;
+      margin: 2px 0;
+    }
+    .nav a:hover, .nav .active { background: #263442; color: white; }
+    .main { padding: 24px; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    h1 { margin: 0; font-size: 28px; line-height: 1.2; }
+    h2 { font-size: 20px; margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+    .grid { display: grid; gap: 14px; }
+    .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .panel, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .stat strong { display: block; font-size: 28px; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--line); }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: #eef2f6; font-size: 13px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .button, button {
+      border: 0;
+      background: var(--accent);
+      color: white;
+      padding: 9px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-block;
+      font: inherit;
+    }
+    .button:hover, button:hover { background: var(--accent-dark); color: white; }
+    .secondary { background: #475467; }
+    .danger { background: var(--danger); }
+    .ghost { background: transparent; color: var(--accent-dark); border: 1px solid var(--line); }
+    form.grid-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    label { display: grid; gap: 5px; font-weight: 700; color: #344054; }
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font: inherit;
+      background: white;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    .span-2 { grid-column: 1 / -1; }
+    .flash { padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; background: #ecfdf3; border: 1px solid #abefc6; }
+    .flash.error { background: #fef3f2; border-color: #fecdca; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; background: #eef2f6; font-size: 12px; color: #344054; }
+    .auth {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #eef2f6;
+    }
+    .auth .panel { width: min(440px, 100%); }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+      .stats, .two, form.grid-form { grid-template-columns: 1fr; }
+      .main { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+{% if user %}
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">Interview Tracker</div>
+    <nav class="nav">
+      <a class="{{ 'active' if active == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a class="{{ 'active' if active == 'profile' else '' }}" href="{{ url_for('profile') }}">Profile</a>
+      <a class="{{ 'active' if active == 'applications' else '' }}" href="{{ url_for('applications') }}">Applications</a>
+      <a class="{{ 'active' if active == 'interviews' else '' }}" href="{{ url_for('interviews') }}">Interviews</a>
+      <a class="{{ 'active' if active == 'reminders' else '' }}" href="{{ url_for('reminders') }}">Reminders</a>
+      <a class="{{ 'active' if active == 'documents' else '' }}" href="{{ url_for('documents') }}">Documents</a>
+      <a class="{{ 'active' if active == 'reports' else '' }}" href="{{ url_for('reports') }}">Reports</a>
+      {% if user.role == 'admin' %}
+      <a class="{{ 'active' if active == 'admin' else '' }}" href="{{ url_for('admin') }}">Admin</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>{{ title }}</h1>
+        <div class="muted">{{ subtitle }}</div>
+      </div>
+      <div class="badge">{{ user.full_name }} · {{ user.role.replace('_', ' ').title() }}</div>
+    </div>
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {{ body|safe }}
+  </main>
+</div>
+{% else %}
+<div class="auth">
+  <div class="panel">
+    <h1>{{ title }}</h1>
+    <p class="muted">{{ subtitle }}</p>
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {{ body|safe }}
+  </div>
+</div>
+{% endif %}
+</body>
+</html>
+"""
