@@ -452,3 +452,86 @@ BASE_TEMPLATE = """
 </body>
 </html>
 """
+
+
+def page(title, body, active="", subtitle="Manage applications, interviews, reminders, and reports."):
+    return render_template_string(
+        BASE_TEMPLATE,
+        title=title,
+        subtitle=subtitle,
+        active=active,
+        body=body,
+        user=current_user(),
+        statuses=APPLICATION_STATUSES,
+    )
+
+
+@app.route("/")
+def home():
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        full_name = request.form.get("full_name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        if not full_name or not email or not password:
+            flash("Full name, email, and password are required.", "error")
+        else:
+            try:
+                execute(
+                    """
+                    INSERT INTO users (full_name, email, mobile_number, password, role, created_at)
+                    VALUES (?, ?, ?, ?, 'job_seeker', ?)
+                    """,
+                    (
+                        full_name,
+                        email,
+                        request.form.get("mobile_number", "").strip(),
+                        generate_password_hash(password),
+                        now_text(),
+                    ),
+                )
+                flash("Account created. Please login.", "success")
+                return redirect(url_for("login"))
+            except sqlite3.IntegrityError:
+                flash("An account with this email already exists.", "error")
+
+    body = """
+    <form method="post" class="grid-form">
+      <label class="span-2">Full Name <input name="full_name" required></label>
+      <label class="span-2">Email <input name="email" type="email" required></label>
+      <label class="span-2">Mobile Number <input name="mobile_number"></label>
+      <label class="span-2">Password <input name="password" type="password" required></label>
+      <button class="span-2">Create Account</button>
+    </form>
+    <p><a href="{{ url_for('login') }}">Already registered? Login</a></p>
+    """
+    return page("Create Account", render_template_string(body), subtitle="Start tracking your interviews.")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        user = query_one("SELECT * FROM users WHERE email = ?", (email,))
+        if user and check_password_hash(user["password"], request.form.get("password", "")):
+            session.clear()
+            session["user_id"] = user["user_id"]
+            return redirect(url_for("dashboard"))
+        flash("Invalid email or password.", "error")
+
+    body = """
+    <form method="post" class="grid-form">
+      <label class="span-2">Email <input name="email" type="email" required></label>
+      <label class="span-2">Password <input name="password" type="password" required></label>
+      <button class="span-2">Login</button>
+    </form>
+    <p class="muted">Admin demo: admin@example.com / admin123</p>
+    <p><a href="{{ url_for('register') }}">Create a job seeker account</a></p>
+    """
+    return page("Login", render_template_string(body), subtitle="Access your interview tracking workspace.")
