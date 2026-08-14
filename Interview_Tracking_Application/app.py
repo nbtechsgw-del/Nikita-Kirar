@@ -535,3 +535,227 @@ def login():
     <p><a href="{{ url_for('register') }}">Create a job seeker account</a></p>
     """
     return page("Login", render_template_string(body), subtitle="Access your interview tracking workspace.")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("login"))
+
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    user = current_user()
+    scope = "" if user["role"] == "admin" else "WHERE user_id = ?"
+    params = () if user["role"] == "admin" else (user["user_id"],)
+    stats = {
+        "applications": query_one(f"SELECT COUNT(*) AS total FROM job_applications {scope}", params)["total"],
+        "scheduled": query_one(
+            "SELECT COUNT(*) AS total FROM interviews i JOIN job_applications a ON a.application_id = i.application_id "
+            + ("" if user["role"] == "admin" else "WHERE a.user_id = ?"),
+            params,
+        )["total"],
+        "selected": query_one(
+            f"SELECT COUNT(*) AS total FROM job_applications {scope + (' AND' if scope else 'WHERE')} application_status IN ('Selected','Offer Received')",
+            params,
+        )["total"],
+        "rejected": query_one(
+            f"SELECT COUNT(*) AS total FROM job_applications {scope + (' AND' if scope else 'WHERE')} application_status = 'Rejected'",
+            params,
+        )["total"],
+    }
+    upcoming = query_all(
+        """
+        SELECT i.*, a.job_title, c.company_name
+        FROM interviews i
+        JOIN job_applications a ON a.application_id = i.application_id
+        JOIN companies c ON c.company_id = a.company_id
+        WHERE i.interview_date >= ? """ + ("" if user["role"] == "admin" else "AND a.user_id = ?") + """
+        ORDER BY i.interview_date, i.interview_time LIMIT 6
+        """,
+        (date.today().isoformat(),) + (() if user["role"] == "admin" else (user["user_id"],)),
+    )
+    status_rows = query_all(
+        """
+        SELECT application_status, COUNT(*) AS total FROM job_applications
+        """ + ("" if user["role"] == "admin" else "WHERE user_id = ?") + """
+        GROUP BY application_status ORDER BY total DESC
+        """,
+        params,
+    )
+    body = render_template_string(
+        """
+        <div class="grid stats">
+          <div class="stat panel">Total Applications<strong>{{ stats.applications }}</strong></div>
+          <div class="stat panel">Scheduled Interviews<strong>{{ stats.scheduled }}</strong></div>
+          <div class="stat panel">Selected / Offers<strong>{{ stats.selected }}</strong></div>
+          <div class="stat panel">Rejected<strong>{{ stats.rejected }}</strong></div>
+        </div>
+        <div class="grid two" style="margin-top:14px">
+          <section class="panel">
+            <h2>Upcoming Interviews</h2>
+            {% if upcoming %}
+              <table>
+                <tr><th>Date</th><th>Company</th><th>Round</th><th>Mode</th></tr>
+                {% for item in upcoming %}
+                <tr><td>{{ item.interview_date }} {{ item.interview_time }}</td><td>{{ item.company_name }}</td><td>{{ item.interview_round }}</td><td>{{ item.interview_mode }}</td></tr>
+                {% endfor %}
+              </table>
+            {% else %}
+              <p class="muted">No upcoming interviews yet.</p>
+            {% endif %}
+          </section>
+          <section class="panel">
+            <h2>Status Distribution</h2>
+            {% for row in status_rows %}
+              <p><span class="badge">{{ row.application_status }}</span> {{ row.total }}</p>
+            {% else %}
+              <p class="muted">Add an application to see status statistics.</p>
+            {% endfor %}
+          </section>
+        </div>
+        """,
+        stats=stats,
+        upcoming=upcoming,
+        status_rows=status_rows,
+    )
+    return page("Dashboard", body, "dashboard", "A quick view of current interview progress.")
+
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    user = current_user()
+    if request.method == "POST":
+        execute(
+            """
+            UPDATE users SET full_name=?, mobile_number=?, skills=?, experience=?, education=?
+            WHERE user_id=?
+            """,
+            (
+                request.form.get("full_name", "").strip(),
+                request.form.get("mobile_number", "").strip(),
+                request.form.get("skills", "").strip(),
+                request.form.get("experience", "").strip(),
+                request.form.get("education", "").strip(),
+                user["user_id"],
+            ),
+        )
+        flash("Profile updated.", "success")
+        return redirect(url_for("profile"))
+
+    body = render_template_string(
+        """
+        <form method="post" class="grid-form">
+          <label>Full Name <input name="full_name" value="{{ user.full_name }}" required></label>
+          <label>Mobile Number <input name="mobile_number" value="{{ user.mobile_number or '' }}"></label>
+          <label class="span-2">Skills <textarea name="skills">{{ user.skills or '' }}</textarea></label>
+          <label class="span-2">Work Experience <textarea name="experience">{{ user.experience or '' }}</textarea></label>
+          <label class="span-2">Education <textarea name="education">{{ user.education or '' }}</textarea></label>
+          <button>Save Profile</button>
+        </form>
+        """,
+        user=user,
+    )
+    return page("Profile", body, "profile", "Maintain personal details, skills, education, and work history.")
+
+
+@app.route("/applications", methods=["GET", "POST"])
+@login_required
+def applications():
+    user = current_user()
+    companies = query_all("SELECT * FROM companies WHERE status = 'Active' ORDER BY company_name")
+    if request.method == "POST":
+        if not companies:
+            flash("Add at least one company before creating an application.", "error")
+            return redirect(url_for("applications"))
+        cursor = execute(
+            """
+            INSERT INTO job_applications
+            (user_id, company_id, job_title, job_description, job_location, employment_type, salary,
+             application_date, resume_submitted, application_status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user["user_id"],
+                request.form.get("company_id"),
+                request.form.get("job_title", "").strip(),
+                request.form.get("job_description", "").strip(),
+                request.form.get("job_location", "").strip(),
+                request.form.get("employment_type", "").strip(),
+                request.form.get("salary", "").strip(),
+                request.form.get("application_date") or date.today().isoformat(),
+                request.form.get("resume_submitted", "No"),
+                request.form.get("application_status", "Applied"),
+                now_text(),
+            ),
+        )
+        execute(
+            "INSERT INTO status_history (application_id, new_status, changed_at, remarks) VALUES (?, ?, ?, ?)",
+            (cursor.lastrowid, request.form.get("application_status", "Applied"), now_text(), "Application created"),
+        )
+        flash("Application added.", "success")
+        return redirect(url_for("applications"))
+
+    where = "" if user["role"] == "admin" else "WHERE a.user_id = ?"
+    params = () if user["role"] == "admin" else (user["user_id"],)
+    rows = query_all(
+        f"""
+        SELECT a.*, c.company_name
+        FROM job_applications a
+        JOIN companies c ON c.company_id = a.company_id
+        {where}
+        ORDER BY a.application_date DESC, a.application_id DESC
+        """,
+        params,
+    )
+    body = render_template_string(
+        """
+        <section class="panel">
+          <h2>Add Job Application</h2>
+          <form method="post" class="grid-form">
+            <label>Company
+              <select name="company_id" required>
+                {% for company in companies %}<option value="{{ company.company_id }}">{{ company.company_name }}</option>{% endfor %}
+              </select>
+            </label>
+            <label>Job Title <input name="job_title" required></label>
+            <label>Job Location <input name="job_location"></label>
+            <label>Employment Type <input name="employment_type" placeholder="Full Time, Internship"></label>
+            <label>Salary Offered <input name="salary"></label>
+            <label>Application Date <input name="application_date" type="date" value="{{ today }}"></label>
+            <label>Resume Submitted
+              <select name="resume_submitted"><option>Yes</option><option>No</option></select>
+            </label>
+            <label>Status
+              <select name="application_status">{% for status in statuses %}<option>{{ status }}</option>{% endfor %}</select>
+            </label>
+            <label class="span-2">Job Description <textarea name="job_description"></textarea></label>
+            <button>Add Application</button>
+          </form>
+        </section>
+        <section style="margin-top:14px">
+          <table>
+            <tr><th>Company</th><th>Title</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+            {% for row in rows %}
+            <tr>
+              <td>{{ row.company_name }}</td>
+              <td>{{ row.job_title }}</td>
+              <td>{{ row.application_date }}</td>
+              <td><span class="badge">{{ row.application_status }}</span></td>
+              <td class="actions">
+                <a class="button ghost" href="{{ url_for('application_detail', application_id=row.application_id) }}">Open</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </table>
+        </section>
+        """,
+        rows=rows,
+        companies=companies,
+        today=date.today().isoformat(),
+        statuses=APPLICATION_STATUSES,
+    )
+    return page("Applications", body, "applications", "Add, review, and update job applications.")
