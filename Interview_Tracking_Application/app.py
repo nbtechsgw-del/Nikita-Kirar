@@ -759,3 +759,269 @@ def applications():
         statuses=APPLICATION_STATUSES,
     )
     return page("Applications", body, "applications", "Add, review, and update job applications.")
+
+
+@app.route("/applications/<int:application_id>", methods=["GET", "POST"])
+@login_required
+def application_detail(application_id):
+    user = current_user()
+    app_row = query_one(
+        """
+        SELECT a.*, c.company_name FROM job_applications a
+        JOIN companies c ON c.company_id = a.company_id
+        WHERE a.application_id = ?
+        """,
+        (application_id,),
+    )
+    if not app_row or (user["role"] != "admin" and app_row["user_id"] != user["user_id"]):
+        flash("Application not found.", "error")
+        return redirect(url_for("applications"))
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "status":
+            new_status = request.form.get("application_status")
+            execute(
+                "UPDATE job_applications SET application_status = ? WHERE application_id = ?",
+                (new_status, application_id),
+            )
+            execute(
+                """
+                INSERT INTO status_history (application_id, old_status, new_status, changed_at, remarks)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (application_id, app_row["application_status"], new_status, now_text(), request.form.get("remarks", "")),
+            )
+            flash("Status updated.", "success")
+        elif action == "note":
+            execute(
+                "INSERT INTO notes (application_id, note_text, created_at) VALUES (?, ?, ?)",
+                (application_id, request.form.get("note_text", "").strip(), now_text()),
+            )
+            flash("Note saved.", "success")
+        return redirect(url_for("application_detail", application_id=application_id))
+
+    history = query_all("SELECT * FROM status_history WHERE application_id = ? ORDER BY changed_at DESC", (application_id,))
+    notes = query_all("SELECT * FROM notes WHERE application_id = ? ORDER BY created_at DESC", (application_id,))
+    body = render_template_string(
+        """
+        <div class="grid two">
+          <section class="panel">
+            <h2>{{ app.company_name }} · {{ app.job_title }}</h2>
+            <p><strong>Status:</strong> <span class="badge">{{ app.application_status }}</span></p>
+            <p><strong>Location:</strong> {{ app.job_location or 'Not set' }}</p>
+            <p><strong>Employment:</strong> {{ app.employment_type or 'Not set' }}</p>
+            <p><strong>Salary:</strong> {{ app.salary or 'Not set' }}</p>
+            <p>{{ app.job_description or '' }}</p>
+          </section>
+          <section class="panel">
+            <h2>Update Status</h2>
+            <form method="post" class="grid-form">
+              <input type="hidden" name="action" value="status">
+              <label class="span-2">Status
+                <select name="application_status">{% for status in statuses %}<option {{ 'selected' if status == app.application_status else '' }}>{{ status }}</option>{% endfor %}</select>
+              </label>
+              <label class="span-2">Remarks <textarea name="remarks"></textarea></label>
+              <button>Save Status</button>
+            </form>
+          </section>
+        </div>
+        <div class="grid two" style="margin-top:14px">
+          <section class="panel">
+            <h2>Status History</h2>
+            {% for item in history %}
+              <p><span class="badge">{{ item.new_status }}</span> {{ item.changed_at }}<br><span class="muted">{{ item.remarks or '' }}</span></p>
+            {% else %}<p class="muted">No history yet.</p>{% endfor %}
+          </section>
+          <section class="panel">
+            <h2>Notes</h2>
+            <form method="post">
+              <input type="hidden" name="action" value="note">
+              <textarea name="note_text" required placeholder="Technical questions, HR discussion, feedback, salary notes"></textarea>
+              <p><button>Save Note</button></p>
+            </form>
+            {% for note in notes %}<p>{{ note.note_text }}<br><span class="muted">{{ note.created_at }}</span></p>{% endfor %}
+          </section>
+        </div>
+        """,
+        app=app_row,
+        history=history,
+        notes=notes,
+        statuses=APPLICATION_STATUSES,
+    )
+    return page("Application Detail", body, "applications", "Track rounds, notes, and status changes.")
+
+
+@app.route("/interviews", methods=["GET", "POST"])
+@login_required
+def interviews():
+    user = current_user()
+    where = "" if user["role"] == "admin" else "WHERE a.user_id = ?"
+    params = () if user["role"] == "admin" else (user["user_id"],)
+    apps = query_all(
+        f"SELECT a.application_id, a.job_title, c.company_name FROM job_applications a JOIN companies c ON c.company_id = a.company_id {where}",
+        params,
+    )
+    if request.method == "POST":
+        execute(
+            """
+            INSERT INTO interviews (application_id, interview_round, interview_date, interview_time, interview_mode,
+                                    interviewer_name, meeting_link, location, remarks)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                request.form.get("application_id"),
+                request.form.get("interview_round", "").strip(),
+                request.form.get("interview_date"),
+                request.form.get("interview_time"),
+                request.form.get("interview_mode"),
+                request.form.get("interviewer_name", "").strip(),
+                request.form.get("meeting_link", "").strip(),
+                request.form.get("location", "").strip(),
+                request.form.get("remarks", "").strip(),
+            ),
+        )
+        execute(
+            "UPDATE job_applications SET application_status = 'Interview Scheduled' WHERE application_id = ?",
+            (request.form.get("application_id"),),
+        )
+        flash("Interview scheduled.", "success")
+        return redirect(url_for("interviews"))
+
+    rows = query_all(
+        f"""
+        SELECT i.*, a.job_title, c.company_name
+        FROM interviews i
+        JOIN job_applications a ON a.application_id = i.application_id
+        JOIN companies c ON c.company_id = a.company_id
+        {where}
+        ORDER BY i.interview_date, i.interview_time
+        """,
+        params,
+    )
+    body = render_template_string(
+        """
+        <section class="panel">
+          <h2>Schedule Interview</h2>
+          <form method="post" class="grid-form">
+            <label class="span-2">Application
+              <select name="application_id" required>
+                {% for app in apps %}<option value="{{ app.application_id }}">{{ app.company_name }} - {{ app.job_title }}</option>{% endfor %}
+              </select>
+            </label>
+            <label>Round <input name="interview_round" required placeholder="Technical Round"></label>
+            <label>Mode <select name="interview_mode"><option>Online</option><option>Offline</option><option>Telephone</option></select></label>
+            <label>Date <input name="interview_date" type="date" required></label>
+            <label>Time <input name="interview_time" type="time" required></label>
+            <label>Interviewer <input name="interviewer_name"></label>
+            <label>Meeting Link <input name="meeting_link"></label>
+            <label class="span-2">Location / Notes <textarea name="location"></textarea></label>
+            <label class="span-2">Remarks <textarea name="remarks"></textarea></label>
+            <button>Schedule</button>
+          </form>
+        </section>
+        <section style="margin-top:14px">
+          <table>
+            <tr><th>Date</th><th>Company</th><th>Round</th><th>Mode</th><th>Interviewer</th></tr>
+            {% for row in rows %}
+            <tr><td>{{ row.interview_date }} {{ row.interview_time }}</td><td>{{ row.company_name }}</td><td>{{ row.interview_round }}</td><td>{{ row.interview_mode }}</td><td>{{ row.interviewer_name }}</td></tr>
+            {% endfor %}
+          </table>
+        </section>
+        """,
+        apps=apps,
+        rows=rows,
+    )
+    return page("Interviews", body, "interviews", "Schedule rounds with date, time, mode, and interviewer details.")
+
+
+@app.route("/reminders", methods=["GET", "POST"])
+@login_required
+def reminders():
+    user = current_user()
+    if request.method == "POST":
+        execute(
+            """
+            INSERT INTO reminders (user_id, reminder_title, reminder_date, reminder_time, reminder_type, notification_status)
+            VALUES (?, ?, ?, ?, ?, 'Pending')
+            """,
+            (
+                user["user_id"],
+                request.form.get("reminder_title", "").strip(),
+                request.form.get("reminder_date"),
+                request.form.get("reminder_time"),
+                request.form.get("reminder_type"),
+            ),
+        )
+        flash("Reminder created.", "success")
+        return redirect(url_for("reminders"))
+    rows = query_all("SELECT * FROM reminders WHERE user_id = ? ORDER BY reminder_date, reminder_time", (user["user_id"],))
+    body = render_template_string(
+        """
+        <section class="panel">
+          <h2>Create Reminder</h2>
+          <form method="post" class="grid-form">
+            <label>Title <input name="reminder_title" required></label>
+            <label>Type <select name="reminder_type"><option>Email Notification</option><option>Dashboard Notification</option></select></label>
+            <label>Date <input name="reminder_date" type="date" required></label>
+            <label>Time <input name="reminder_time" type="time"></label>
+            <button>Create</button>
+          </form>
+        </section>
+        <table style="margin-top:14px">
+          <tr><th>Title</th><th>Date</th><th>Type</th><th>Status</th></tr>
+          {% for row in rows %}<tr><td>{{ row.reminder_title }}</td><td>{{ row.reminder_date }} {{ row.reminder_time or '' }}</td><td>{{ row.reminder_type }}</td><td>{{ row.notification_status }}</td></tr>{% endfor %}
+        </table>
+        """,
+        rows=rows,
+    )
+    return page("Reminders", body, "reminders", "Create follow-up, document, interview, and deadline reminders.")
+
+
+@app.route("/documents", methods=["GET", "POST"])
+@login_required
+def documents():
+    user = current_user()
+    if request.method == "POST":
+        file = request.files.get("document_file")
+        stored_name = ""
+        if file and file.filename and allowed_file(file.filename):
+            stored_name = f"{user['user_id']}_{int(datetime.now().timestamp())}_{secure_filename(file.filename)}"
+            file.save(UPLOAD_FOLDER / stored_name)
+        execute(
+            """
+            INSERT INTO documents (user_id, document_name, document_type, file_path, upload_date)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                user["user_id"],
+                request.form.get("document_name", "").strip(),
+                request.form.get("document_type"),
+                stored_name,
+                now_text(),
+            ),
+        )
+        flash("Document record saved.", "success")
+        return redirect(url_for("documents"))
+    rows = query_all("SELECT * FROM documents WHERE user_id = ? ORDER BY upload_date DESC", (user["user_id"],))
+    body = render_template_string(
+        """
+        <section class="panel">
+          <h2>Upload Document</h2>
+          <form method="post" enctype="multipart/form-data" class="grid-form">
+            <label>Document Name <input name="document_name" required></label>
+            <label>Type
+              <select name="document_type"><option>Resume</option><option>Cover Letter</option><option>Offer Letter</option><option>Interview Notes</option><option>Certificate</option><option>Portfolio</option></select>
+            </label>
+            <label class="span-2">File <input name="document_file" type="file"></label>
+            <button>Save Document</button>
+          </form>
+        </section>
+        <table style="margin-top:14px">
+          <tr><th>Name</th><th>Type</th><th>Uploaded</th><th>File</th></tr>
+          {% for row in rows %}<tr><td>{{ row.document_name }}</td><td>{{ row.document_type }}</td><td>{{ row.upload_date }}</td><td>{{ row.file_path or 'No file attached' }}</td></tr>{% endfor %}
+        </table>
+        """,
+        rows=rows,
+    )
+    return page("Documents", body, "documents", "Store resumes, cover letters, offers, notes, certificates, and portfolios.")
