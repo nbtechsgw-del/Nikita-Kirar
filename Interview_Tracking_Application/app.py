@@ -1025,3 +1025,124 @@ def documents():
         rows=rows,
     )
     return page("Documents", body, "documents", "Store resumes, cover letters, offers, notes, certificates, and portfolios.")
+
+
+@app.route("/admin", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin():
+    if request.method == "POST":
+        execute(
+            """
+            INSERT INTO companies (company_name, industry, website, location, hr_name, hr_email, hr_phone, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                request.form.get("company_name", "").strip(),
+                request.form.get("industry", "").strip(),
+                request.form.get("website", "").strip(),
+                request.form.get("location", "").strip(),
+                request.form.get("hr_name", "").strip(),
+                request.form.get("hr_email", "").strip(),
+                request.form.get("hr_phone", "").strip(),
+                request.form.get("status", "Active"),
+            ),
+        )
+        flash("Company saved.", "success")
+        return redirect(url_for("admin"))
+
+    companies = query_all("SELECT * FROM companies ORDER BY company_name")
+    users = query_all("SELECT user_id, full_name, email, role, created_at FROM users ORDER BY created_at DESC")
+    body = render_template_string(
+        """
+        <div class="grid two">
+          <section class="panel">
+            <h2>Add Company</h2>
+            <form method="post" class="grid-form">
+              <label class="span-2">Company Name <input name="company_name" required></label>
+              <label>Industry <input name="industry"></label>
+              <label>Website <input name="website"></label>
+              <label>Location <input name="location"></label>
+              <label>Status <select name="status"><option>Active</option><option>Inactive</option></select></label>
+              <label>HR Name <input name="hr_name"></label>
+              <label>HR Email <input name="hr_email"></label>
+              <label>HR Phone <input name="hr_phone"></label>
+              <button>Save Company</button>
+            </form>
+          </section>
+          <section class="panel">
+            <h2>Registered Users</h2>
+            {% for user in users %}
+              <p>{{ user.full_name }}<br><span class="muted">{{ user.email }} · {{ user.role }}</span></p>
+            {% endfor %}
+          </section>
+        </div>
+        <table style="margin-top:14px">
+          <tr><th>Company</th><th>Industry</th><th>Location</th><th>HR Contact</th><th>Status</th></tr>
+          {% for c in companies %}<tr><td>{{ c.company_name }}</td><td>{{ c.industry }}</td><td>{{ c.location }}</td><td>{{ c.hr_name }}<br>{{ c.hr_email }}<br>{{ c.hr_phone }}</td><td>{{ c.status }}</td></tr>{% endfor %}
+        </table>
+        """,
+        companies=companies,
+        users=users,
+    )
+    return page("Admin", body, "admin", "Manage companies, users, and system-level data.")
+
+
+@app.route("/reports")
+@login_required
+def reports():
+    user = current_user()
+    where = "" if user["role"] == "admin" else "WHERE a.user_id = ?"
+    params = () if user["role"] == "admin" else (user["user_id"],)
+    rows = query_all(
+        f"""
+        SELECT c.company_name, a.job_title, a.application_date, a.application_status, a.employment_type, a.salary
+        FROM job_applications a
+        JOIN companies c ON c.company_id = a.company_id
+        {where}
+        ORDER BY a.application_date DESC
+        """,
+        params,
+    )
+    if request.args.get("format") == "csv":
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Company", "Job Title", "Application Date", "Status", "Employment Type", "Salary"])
+        for row in rows:
+            writer.writerow([row["company_name"], row["job_title"], row["application_date"], row["application_status"], row["employment_type"], row["salary"]])
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment; filename=application_report.csv"},
+        )
+
+    recent_cutoff = (date.today() - timedelta(days=30)).isoformat()
+    monthly = query_one(
+        f"SELECT COUNT(*) AS total FROM job_applications a {where + (' AND' if where else 'WHERE')} a.application_date >= ?",
+        params + (recent_cutoff,),
+    )["total"]
+    body = render_template_string(
+        """
+        <p><a class="button" href="{{ url_for('reports', format='csv') }}">Export CSV</a></p>
+        <div class="grid stats">
+          <div class="stat panel">Last 30 Days<strong>{{ monthly }}</strong></div>
+          <div class="stat panel">Report Rows<strong>{{ rows|length }}</strong></div>
+        </div>
+        <table style="margin-top:14px">
+          <tr><th>Company</th><th>Job</th><th>Date</th><th>Status</th><th>Type</th><th>Salary</th></tr>
+          {% for row in rows %}
+          <tr><td>{{ row.company_name }}</td><td>{{ row.job_title }}</td><td>{{ row.application_date }}</td><td>{{ row.application_status }}</td><td>{{ row.employment_type }}</td><td>{{ row.salary }}</td></tr>
+          {% endfor %}
+        </table>
+        """,
+        rows=rows,
+        monthly=monthly,
+    )
+    return page("Reports", body, "reports", "Generate application, interview, company, selection, and rejection reports.")
+
+
+init_db()
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
